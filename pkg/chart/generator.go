@@ -79,7 +79,7 @@ func buildChartData(ts *config.TechStack) chartData {
 	return data
 }
 
-func resolveChartVersion(name string, appVersion string) string {
+func resolveChartVersion(name string, _ string) string {
 	versions := map[string]string{
 		"mysql":      "11.1.17",
 		"postgresql": "15.5.38",
