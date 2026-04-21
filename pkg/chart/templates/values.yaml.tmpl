@@ -1,0 +1,23 @@
+image: {{ .App.Image }}
+port: {{ .App.Port }}
+replicas: {{ .App.Replicas }}
+
+resources:
+  limits:
+    cpu: {{ .App.Resources.CPU }}
+    memory: {{ .App.Resources.Memory }}
+  requests:
+    cpu: {{ .App.Resources.CPU }}
+    memory: {{ .App.Resources.Memory }}
+
+{{- if .App.Env }}
+env:
+{{- range .App.Env }}
+  - name: {{ .Name }}
+    value: "{{ .Value }}"
+{{- end }}
+{{- end }}
+{{ range $key, $vals := .DependencyValues }}
+{{ $key }}:
+{{ $vals }}
+{{- end }}

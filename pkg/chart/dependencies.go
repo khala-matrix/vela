@@ -4,19 +4,19 @@ package chart
 type DependencyInfo struct {
 	ChartName     string
 	Repository    string
-	DefaultValues map[string]interface{}
+	DefaultValues map[string]any
 }
 
 var DependencyRegistry = map[string]DependencyInfo{
 	"mysql": {
 		ChartName:  "mysql",
 		Repository: "https://charts.bitnami.com/bitnami",
-		DefaultValues: map[string]interface{}{
-			"auth": map[string]interface{}{
+		DefaultValues: map[string]any{
+			"auth": map[string]any{
 				"database": "app",
 			},
-			"primary": map[string]interface{}{
-				"persistence": map[string]interface{}{
+			"primary": map[string]any{
+				"persistence": map[string]any{
 					"size": "1Gi",
 				},
 			},
@@ -25,12 +25,12 @@ var DependencyRegistry = map[string]DependencyInfo{
 	"postgresql": {
 		ChartName:  "postgresql",
 		Repository: "https://charts.bitnami.com/bitnami",
-		DefaultValues: map[string]interface{}{
-			"auth": map[string]interface{}{
+		DefaultValues: map[string]any{
+			"auth": map[string]any{
 				"database": "app",
 			},
-			"primary": map[string]interface{}{
-				"persistence": map[string]interface{}{
+			"primary": map[string]any{
+				"persistence": map[string]any{
 					"size": "1Gi",
 				},
 			},
@@ -39,10 +39,10 @@ var DependencyRegistry = map[string]DependencyInfo{
 	"redis": {
 		ChartName:  "redis",
 		Repository: "https://charts.bitnami.com/bitnami",
-		DefaultValues: map[string]interface{}{
+		DefaultValues: map[string]any{
 			"architecture": "standalone",
-			"master": map[string]interface{}{
-				"persistence": map[string]interface{}{
+			"master": map[string]any{
+				"persistence": map[string]any{
 					"size": "1Gi",
 				},
 			},
@@ -51,9 +51,9 @@ var DependencyRegistry = map[string]DependencyInfo{
 	"mongodb": {
 		ChartName:  "mongodb",
 		Repository: "https://charts.bitnami.com/bitnami",
-		DefaultValues: map[string]interface{}{
+		DefaultValues: map[string]any{
 			"architecture": "standalone",
-			"persistence": map[string]interface{}{
+			"persistence": map[string]any{
 				"size": "1Gi",
 			},
 		},
