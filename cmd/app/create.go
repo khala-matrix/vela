@@ -39,9 +39,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("parse tech-stack: %w", err)
 	}
 
-	if ts.App.Name != name {
-		ts.App.Name = name
-	}
+	ts.Name = name
 
 	chartDir := s.ChartDir(name)
 	if err := os.MkdirAll(chartDir, 0755); err != nil {

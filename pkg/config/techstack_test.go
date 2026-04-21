@@ -173,6 +173,157 @@ func TestParseTechStack_FileNotFound(t *testing.T) {
 	}
 }
 
+func TestParseTechStack_MultiService(t *testing.T) {
+	yaml := `
+name: fullstack-app
+services:
+  - name: fastapi-backend
+    image: registry.example.com/fastapi-backend:latest
+    port: 8000
+    replicas: 2
+    env:
+      - name: CORS_ORIGINS
+        value: "http://localhost:3000"
+    resources:
+      cpu: 500m
+      memory: 512Mi
+  - name: nextjs-frontend
+    image: registry.example.com/nextjs-frontend:latest
+    port: 3000
+    env:
+      - name: NEXT_PUBLIC_API_URL
+        value: "http://fastapi-backend:8000"
+dependencies:
+  redis:
+    version: "7.0"
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tech-stack.yaml")
+	os.WriteFile(path, []byte(yaml), 0644)
+
+	ts, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if ts.ProjectName() != "fullstack-app" {
+		t.Errorf("expected project name fullstack-app, got %s", ts.ProjectName())
+	}
+	if !ts.IsMultiService() {
+		t.Error("expected IsMultiService() to be true")
+	}
+	if len(ts.Services) != 2 {
+		t.Fatalf("expected 2 services, got %d", len(ts.Services))
+	}
+
+	backend := ts.Services[0]
+	if backend.Name != "fastapi-backend" {
+		t.Errorf("expected backend name fastapi-backend, got %s", backend.Name)
+	}
+	if backend.Port != 8000 {
+		t.Errorf("expected backend port 8000, got %d", backend.Port)
+	}
+	if backend.Replicas != 2 {
+		t.Errorf("expected backend replicas 2, got %d", backend.Replicas)
+	}
+
+	frontend := ts.Services[1]
+	if frontend.Name != "nextjs-frontend" {
+		t.Errorf("expected frontend name nextjs-frontend, got %s", frontend.Name)
+	}
+	if frontend.Replicas != 1 {
+		t.Errorf("expected default replicas 1, got %d", frontend.Replicas)
+	}
+	if frontend.Resources.CPU != "250m" {
+		t.Errorf("expected default cpu 250m, got %s", frontend.Resources.CPU)
+	}
+
+	redis, ok := ts.Dependencies["redis"]
+	if !ok {
+		t.Fatal("redis dependency missing")
+	}
+	if redis.Version != "7.0" {
+		t.Errorf("unexpected redis version: %s", redis.Version)
+	}
+}
+
+func TestParseTechStack_LegacyConvertsToServices(t *testing.T) {
+	yaml := `
+app:
+  name: myapp
+  image: myimg:latest
+  port: 3000
+  replicas: 2
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tech-stack.yaml")
+	os.WriteFile(path, []byte(yaml), 0644)
+
+	ts, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if ts.ProjectName() != "myapp" {
+		t.Errorf("expected project name myapp, got %s", ts.ProjectName())
+	}
+	if len(ts.Services) != 1 {
+		t.Fatalf("expected 1 service from legacy conversion, got %d", len(ts.Services))
+	}
+
+	svc := ts.Services[0]
+	if svc.Name != "myapp" {
+		t.Errorf("expected service name myapp, got %s", svc.Name)
+	}
+	if svc.Image != "myimg:latest" {
+		t.Errorf("expected image myimg:latest, got %s", svc.Image)
+	}
+	if svc.Port != 3000 {
+		t.Errorf("expected port 3000, got %d", svc.Port)
+	}
+	if svc.Replicas != 2 {
+		t.Errorf("expected replicas 2, got %d", svc.Replicas)
+	}
+}
+
+func TestParseTechStack_MultiService_DuplicateName(t *testing.T) {
+	yaml := `
+name: myproject
+services:
+  - name: api
+    image: api:latest
+    port: 8000
+  - name: api
+    image: api-v2:latest
+    port: 8001
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tech-stack.yaml")
+	os.WriteFile(path, []byte(yaml), 0644)
+
+	_, err := Parse(path)
+	if err == nil {
+		t.Fatal("expected error for duplicate service name")
+	}
+}
+
+func TestParseTechStack_MultiService_MissingName(t *testing.T) {
+	yaml := `
+services:
+  - name: api
+    image: api:latest
+    port: 8000
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "tech-stack.yaml")
+	os.WriteFile(path, []byte(yaml), 0644)
+
+	_, err := Parse(path)
+	if err == nil {
+		t.Fatal("expected error for missing top-level name")
+	}
+}
+
 func TestParseTechStack_DependencyDefaults(t *testing.T) {
 	yaml := `
 app:

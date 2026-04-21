@@ -40,9 +40,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("parse tech-stack: %w", err)
 	}
 
-	if ts.App.Name != name {
-		ts.App.Name = name
-	}
+	ts.Name = name
 
 	chartDir := s.ChartDir(name)
 	if err := os.RemoveAll(chartDir); err != nil {

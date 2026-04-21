@@ -17,7 +17,7 @@ var templateFS embed.FS
 
 type chartData struct {
 	Name             string
-	App              config.App
+	Services         []config.Service
 	Dependencies     []chartDependency
 	DependencyValues map[string]string
 }
@@ -40,7 +40,8 @@ func Generate(ts *config.TechStack, outDir string) error {
 		"templates/values.yaml.tmpl":               filepath.Join(outDir, "values.yaml"),
 		"templates/templates/deployment.yaml.tmpl": filepath.Join(outDir, "templates", "deployment.yaml"),
 		"templates/templates/service.yaml.tmpl":    filepath.Join(outDir, "templates", "service.yaml"),
-		"templates/templates/_helpers.tpl.tmpl":     filepath.Join(outDir, "templates", "_helpers.tpl"),
+		"templates/templates/_helpers.tpl.tmpl":    filepath.Join(outDir, "templates", "_helpers.tpl"),
+		"templates/templates/ingress.yaml.tmpl":    filepath.Join(outDir, "templates", "ingress.yaml"),
 	}
 
 	for tmplPath, outPath := range files {
@@ -54,8 +55,8 @@ func Generate(ts *config.TechStack, outDir string) error {
 
 func buildChartData(ts *config.TechStack) chartData {
 	data := chartData{
-		Name:             ts.App.Name,
-		App:              ts.App,
+		Name:             ts.ProjectName(),
+		Services:         ts.Services,
 		DependencyValues: make(map[string]string),
 	}
 

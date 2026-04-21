@@ -1,21 +1,29 @@
-image: {{ .App.Image }}
-port: {{ .App.Port }}
-replicas: {{ .App.Replicas }}
-
-resources:
-  limits:
-    cpu: {{ .App.Resources.CPU }}
-    memory: {{ .App.Resources.Memory }}
-  requests:
-    cpu: {{ .App.Resources.CPU }}
-    memory: {{ .App.Resources.Memory }}
-
-{{- if .App.Env }}
-env:
-{{- range .App.Env }}
-  - name: {{ .Name }}
-    value: "{{ .Value }}"
-{{- end }}
+services:
+{{- range .Services }}
+  {{ .Name }}:
+    image: {{ .Image }}
+    port: {{ .Port }}
+    replicas: {{ .Replicas }}
+    resources:
+      limits:
+        cpu: {{ .Resources.CPU }}
+        memory: {{ .Resources.Memory }}
+      requests:
+        cpu: {{ .Resources.CPU }}
+        memory: {{ .Resources.Memory }}
+    {{- if .Env }}
+    env:
+    {{- range .Env }}
+      - name: {{ .Name }}
+        value: "{{ .Value }}"
+    {{- end }}
+    {{- end }}
+    {{- if .Ingress }}
+    ingress:
+      enabled: {{ .Ingress.Enabled }}
+      host: {{ .Ingress.Host }}
+      path: {{ .Ingress.Path }}
+    {{- end }}
 {{- end }}
 {{ range $key, $vals := .DependencyValues }}
 {{ $key }}:

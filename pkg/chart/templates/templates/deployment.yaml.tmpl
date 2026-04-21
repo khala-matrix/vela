@@ -1,27 +1,36 @@
+{{ "{{- range $name, $svc := .Values.services }}" }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ "{{ include \"chart.fullname\" . }}" }}
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-{{ "{{ $name }}" }}
   labels:
-    {{- "{{ include \"chart.labels\" . | nindent 4 }}" }}
+    {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
+    app.kubernetes.io/component: {{ "{{ $name }}" }}
 spec:
-  replicas: {{ "{{ .Values.replicas }}" }}
+  replicas: {{ "{{ $svc.replicas }}" }}
   selector:
     matchLabels:
-      {{- "{{ include \"chart.selectorLabels\" . | nindent 6 }}" }}
+      {{- "{{ include \"chart.selectorLabels\" $ | nindent 6 }}" }}
+      app.kubernetes.io/component: {{ "{{ $name }}" }}
   template:
     metadata:
       labels:
-        {{- "{{ include \"chart.selectorLabels\" . | nindent 8 }}" }}
+        {{- "{{ include \"chart.selectorLabels\" $ | nindent 8 }}" }}
+        app.kubernetes.io/component: {{ "{{ $name }}" }}
     spec:
       containers:
-        - name: {{ "{{ .Chart.Name }}" }}
-          image: {{ "{{ .Values.image }}" }}
+        - name: {{ "{{ $name }}" }}
+          image: {{ "{{ $svc.image }}" }}
+          imagePullPolicy: Always
           ports:
-            - containerPort: {{ "{{ .Values.port }}" }}
+            - containerPort: {{ "{{ $svc.port }}" }}
           resources:
-            {{- "{{ toYaml .Values.resources | nindent 12 }}" }}
-          {{- "{{ if .Values.env }}" }}
+            {{- "{{ toYaml $svc.resources | nindent 12 }}" }}
           env:
-            {{- "{{ toYaml .Values.env | nindent 12 }}" }}
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          {{- "{{ if $svc.env }}" }}
+            {{- "{{ toYaml $svc.env | nindent 12 }}" }}
           {{- "{{ end }}" }}
+{{ "{{- end }}" }}
