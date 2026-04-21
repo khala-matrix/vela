@@ -1,0 +1,39 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
+)
+
+var (
+	kubeconfig string
+	namespace  string
+	verbose    bool
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "vela",
+	Short: "Deploy applications to k3s clusters",
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	defaultKubeconfig := os.Getenv("KUBECONFIG")
+	if defaultKubeconfig == "" {
+		home, _ := os.UserHomeDir()
+		defaultKubeconfig = filepath.Join(home, ".kube", "config")
+	}
+
+	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", defaultKubeconfig, "path to kubeconfig file")
+	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "default", "target namespace")
+	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
+}
