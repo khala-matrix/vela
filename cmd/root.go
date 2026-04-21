@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mars/vela/cmd/app"
 	"github.com/spf13/cobra"
 )
 
@@ -36,4 +37,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", defaultKubeconfig, "path to kubeconfig file")
 	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "default", "target namespace")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
+
+	rootCmd.AddCommand(app.AppCmd)
 }
