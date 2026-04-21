@@ -1,0 +1,13 @@
+app:
+  name: fastapi-backend
+  image: registry.example.com/fastapi-backend:latest
+  port: 8000
+  replicas: 2
+  env:
+    - name: CORS_ORIGINS
+      value: "http://localhost:3000"
+    - name: PYTHONUNBUFFERED
+      value: "1"
+  resources:
+    cpu: 500m
+    memory: 512Mi
