@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mars/vela/cmd/app"
 	"github.com/spf13/cobra"
 )
 
@@ -38,5 +37,12 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "default", "target namespace")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
 
-	rootCmd.AddCommand(app.AppCmd)
+	rootCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(deployCmd)
+	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(logsCmd)
+	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(configureCmd)
+	rootCmd.AddCommand(versionCmd)
 }

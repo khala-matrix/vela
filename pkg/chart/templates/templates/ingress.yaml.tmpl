@@ -8,6 +8,8 @@ metadata:
   labels:
     {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
     app.kubernetes.io/component: {{ "{{ $name }}" }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ "{{ $.Release.Namespace }}" }}-{{ "{{ include \"chart.fullname\" $ }}" }}-{{ "{{ $name }}" }}-strip@kubernetescrd
 spec:
   rules:
     - host: {{ "{{ $svc.ingress.host }}" }}
@@ -20,5 +22,14 @@ spec:
                 name: {{ "{{ include \"chart.fullname\" $ }}" }}-{{ "{{ $name }}" }}
                 port:
                   number: {{ "{{ $svc.port }}" }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-{{ "{{ $name }}" }}-strip
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ "{{ $svc.ingress.path }}" }}
 {{ "{{- end }}" }}
 {{ "{{- end }}" }}

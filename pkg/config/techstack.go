@@ -22,6 +22,11 @@ type TechStack struct {
 	App          App                    `yaml:"app,omitempty"`
 	Services     []Service              `yaml:"services,omitempty"`
 	Dependencies map[string]*Dependency `yaml:"dependencies,omitempty"`
+	Ingress      *IngressGlobal         `yaml:"ingress,omitempty"`
+}
+
+type IngressGlobal struct {
+	Host string `yaml:"host"`
 }
 
 type Service struct {
@@ -205,13 +210,19 @@ func applyDefaults(ts *TechStack) {
 		}
 	}
 
+	ingressHost := ""
+	if ts.Ingress != nil {
+		ingressHost = ts.Ingress.Host
+	}
+
+	pathPrefix := "/" + ts.ProjectName() + "/" + randomPrefix()
 	for i := range ts.Services {
 		if ts.Services[i].Ingress != nil && ts.Services[i].Ingress.Enabled {
-			if ts.Services[i].Ingress.Path == "" {
-				ts.Services[i].Ingress.Path = "/"
-			}
 			if ts.Services[i].Ingress.Host == "" {
-				ts.Services[i].Ingress.Host = ts.Services[i].Name + "-" + randomPrefix() + ".nip.io"
+				ts.Services[i].Ingress.Host = ingressHost
+			}
+			if ts.Services[i].Ingress.Path == "" {
+				ts.Services[i].Ingress.Path = pathPrefix + "/" + ts.Services[i].Name
 			}
 		}
 	}
