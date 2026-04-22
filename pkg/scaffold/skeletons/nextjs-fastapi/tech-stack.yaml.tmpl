@@ -1,0 +1,21 @@
+name: {{ .Name }}
+ingress:
+  host: {{ .Domain }}
+services:
+  - name: {{ .Name }}-backend
+    image: {{ .Registry }}/{{ .Name }}-backend:latest
+    port: 8000
+    env:
+      - name: CORS_ORIGINS
+        value: "*"
+      - name: PYTHONUNBUFFERED
+        value: "1"
+    ingress:
+      enabled: true
+      path: /{{ .Name }}/api
+  - name: {{ .Name }}-frontend
+    image: {{ .Registry }}/{{ .Name }}-frontend:latest
+    port: 3000
+    ingress:
+      enabled: true
+      path: /{{ .Name }}
