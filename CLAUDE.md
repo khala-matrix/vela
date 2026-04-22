@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Vela — a Go CLI for generating Helm charts from `tech-stack.yaml` specs and deploying them to k3s clusters. Single binary, no runtime dependency on helm CLI. Designed for use as a CI pipeline skill and interactively from devbox development containers.
+Vela — a Go CLI for generating Helm charts from `tech-stack.yaml` specs and deploying them to k3s clusters. Single binary, no runtime dependency on helm CLI. Designed for use as a CI pipeline tool and interactively from devbox development containers.
 
 ## Build & Test
 
@@ -12,26 +12,30 @@ Vela — a Go CLI for generating Helm charts from `tech-stack.yaml` specs and de
 go build -o vela main.go        # build binary
 go build ./...                   # check compilation
 go test ./... -v                 # run all tests
-go test ./pkg/store/ -v          # run single package tests
+go test ./pkg/state/ -v          # run single package tests
 go test ./pkg/config/ -run TestParseTechStack_Full -v  # run single test
 ```
 
 ## Architecture
 
-CLI layer (`cmd/`) → business logic (`pkg/`). Cobra commands in `cmd/app/` are thin wrappers that compose `pkg/` packages.
+CLI layer (`cmd/`) → business logic (`pkg/`). Flat command structure: `vela create`, `vela deploy`, `vela status`, etc. Each command is one file in `cmd/`.
 
-- `pkg/config` — parses and validates `tech-stack.yaml` into `TechStack` struct, applies defaults (replicas=1, cpu=250m, memory=256Mi, storage=1Gi)
-- `pkg/chart` — renders a complete Helm chart directory from a `TechStack` using `//go:embed` templates
-- `pkg/chart/dependencies.go` — registry mapping service types (mysql/postgresql/redis/mongodb) to Bitnami chart names, repos, and default values. Adding a new dependency type = one new entry here.
-- `pkg/helm` — wraps Helm Go SDK (`helm.sh/helm/v3`) for install/upgrade/uninstall/status/list
+Project state lives in `.vela/` directory (like `.git/`). Created by `vela create`, read/updated by all other commands.
+
+- `pkg/config` — parses and validates `tech-stack.yaml` into `TechStack` struct, applies defaults
+- `pkg/scaffold` — generates complete project skeletons from embedded `//go:embed` directory trees in `pkg/scaffold/skeletons/`
+- `pkg/chart` — renders a complete Helm chart directory from a `TechStack`
+- `pkg/state` — `Backend` interface + `LocalBackend` for `.vela/state.yaml` read/write
+- `pkg/project` — `.vela/` directory detection (`Find`) and initialization (`Init`)
+- `pkg/helm` — wraps Helm Go SDK for install/upgrade/uninstall/status/list
 - `pkg/kube` — wraps client-go for Pod status queries and log streaming
-- `pkg/store` — manages `~/.vela/<app>/` local storage (chart files + `meta.json`)
 
-Data flow: `tech-stack.yaml` → `config.Parse()` → `chart.Generate()` → `~/.vela/<name>/chart/` → `helm.Install()` → k3s cluster.
+Data flow: `vela create` → project skeleton + `.vela/state.yaml` → user builds images → `vela deploy` → `config.Parse()` → `chart.Generate()` → `.vela/chart/` → `helm.Install()` → k3s cluster → state synced to `.vela/state.yaml`.
 
 ## Key Conventions
 
+- Skeleton template files live in `pkg/scaffold/skeletons/<template-id>/` and are embedded via `//go:embed all:skeletons`. Each `.tmpl` file is rendered with `text/template` and written with the `.tmpl` suffix stripped.
 - Chart template files live in `pkg/chart/templates/` and are embedded via `//go:embed all:templates`. Helm template syntax is escaped in Go templates using `{{ "{{ .Values.x }}" }}`.
 - `pkg/kube` has a `NewFromClientset()` constructor for tests using `k8s.io/client-go/kubernetes/fake`.
-- Helm client tests are limited to construction/compilation since they require a live cluster.
 - Global flags (kubeconfig, namespace, verbose) are defined as PersistentFlags on the root command and accessed via `cmd.Flag("name").Value.String()` in subcommands.
+- State backend is pluggable via the `state.Backend` interface. Only `LocalBackend` is implemented.
