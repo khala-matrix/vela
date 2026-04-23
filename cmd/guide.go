@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"text/template"
@@ -77,6 +78,27 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	tmpl, err := template.New("guide").Parse(guideTmpl)
 	if err != nil {
 		return fmt.Errorf("parse guide template: %w", err)
+	}
+
+	if isJSON() {
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, data); err != nil {
+			return fmt.Errorf("render guide: %w", err)
+		}
+		var tmplObj *scaffold.Template
+		for i := range scaffold.Templates {
+			if scaffold.Templates[i].ID == templateID {
+				tmplObj = &scaffold.Templates[i]
+				break
+			}
+		}
+		return writeJSON(cmd.OutOrStdout(), map[string]any{
+			"template":    templateID,
+			"title":       tmplObj.Name,
+			"description": tmplObj.Description,
+			"params":      data,
+			"guide":       buf.String(),
+		})
 	}
 
 	return tmpl.Execute(cmd.OutOrStdout(), data)
