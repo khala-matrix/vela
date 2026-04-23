@@ -58,15 +58,21 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	hc := helm.New(kubeconfigVal, ns, insecure)
 	name := ts.ProjectName()
 
+	action := "installed"
 	if hc.ReleaseExists(name) {
-		fmt.Fprintf(cmd.OutOrStdout(), "Upgrading %q in namespace %q...\n", name, ns)
+		action = "upgraded"
+		if !isJSON() {
+			fmt.Fprintf(cmd.OutOrStdout(), "Upgrading %q in namespace %q...\n", name, ns)
+		}
 		if err := hc.Upgrade(name, chartDir); err != nil {
 			st.Status = state.StatusFailed
 			backend.Save(projectDir, st)
 			return fmt.Errorf("upgrade failed: %w", err)
 		}
 	} else {
-		fmt.Fprintf(cmd.OutOrStdout(), "Deploying %q to namespace %q...\n", name, ns)
+		if !isJSON() {
+			fmt.Fprintf(cmd.OutOrStdout(), "Deploying %q to namespace %q...\n", name, ns)
+		}
 		if err := hc.Install(name, chartDir); err != nil {
 			st.Status = state.StatusFailed
 			backend.Save(projectDir, st)
@@ -92,6 +98,33 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		st.Services[svc.Name] = ss
 	}
 	backend.Save(projectDir, st)
+
+	if isJSON() {
+		out := struct {
+			Name      string          `json:"name"`
+			Namespace string          `json:"namespace"`
+			Status    string          `json:"status"`
+			Revision  int             `json:"revision"`
+			Action    string          `json:"action"`
+			Ingresses []ingressOutput `json:"ingresses,omitempty"`
+		}{
+			Name:      name,
+			Namespace: ns,
+			Status:    "deployed",
+			Revision:  st.Revision,
+			Action:    action,
+		}
+		kc, err := kube.New(kubeconfigVal, ns, insecure)
+		if err == nil {
+			ingresses, _ := kc.GetIngresses(context.Background(), name)
+			for _, ing := range ingresses {
+				out.Ingresses = append(out.Ingresses, ingressOutput{
+					Name: ing.Name, Host: ing.Host, Path: ing.Path, URL: ing.URL,
+				})
+			}
+		}
+		return writeJSON(cmd.OutOrStdout(), out)
+	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "App %q deployed successfully.\n\n", name)
 
