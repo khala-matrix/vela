@@ -27,8 +27,15 @@ func runCredentials(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(s.Credentials) == 0 {
+		if isJSON() {
+			return writeJSON(cmd.OutOrStdout(), map[string]any{})
+		}
 		fmt.Fprintln(cmd.OutOrStdout(), "No credentials configured.")
 		return nil
+	}
+
+	if isJSON() {
+		return writeJSON(cmd.OutOrStdout(), s.Credentials)
 	}
 
 	for name, cred := range s.Credentials {
