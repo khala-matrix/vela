@@ -38,6 +38,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "sandbox", "target namespace")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
 	rootCmd.PersistentFlags().BoolVar(&insecure, "insecure", false, "skip TLS certificate verification")
+	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "text", "output format (text, json)")
 
 	rootCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(deployCmd)
