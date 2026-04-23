@@ -17,6 +17,8 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 		Registry:     "registry.example.com/ns",
 		Domain:       "example.com",
 		BaseRegistry: "harbor.example.com/library",
+		BuildTool:    "docker",
+		BuildCmd:     "build",
 	}
 
 	if err := RenderSkeleton("nextjs-fastapi", params, outDir); err != nil {
@@ -96,9 +98,11 @@ func TestRenderSkeleton_NextjsFastapi_NoBaseRegistry(t *testing.T) {
 	outDir := filepath.Join(dir, "myapp")
 
 	params := Params{
-		Name:     "myapp",
-		Registry: "registry.example.com/ns",
-		Domain:   "example.com",
+		Name:      "myapp",
+		Registry:  "registry.example.com/ns",
+		Domain:    "example.com",
+		BuildTool: "docker",
+		BuildCmd:  "build",
 	}
 
 	if err := RenderSkeleton("nextjs-fastapi", params, outDir); err != nil {
@@ -121,9 +125,11 @@ func TestRenderSkeleton_StaticSite(t *testing.T) {
 	outDir := filepath.Join(dir, "mysite")
 
 	params := Params{
-		Name:     "mysite",
-		Registry: "registry.example.com/ns",
-		Domain:   "example.com",
+		Name:      "mysite",
+		Registry:  "registry.example.com/ns",
+		Domain:    "example.com",
+		BuildTool: "docker",
+		BuildCmd:  "build",
 	}
 
 	if err := RenderSkeleton("static-site", params, outDir); err != nil {
@@ -161,6 +167,8 @@ func TestRenderSkeleton_NextjsFastapiPg(t *testing.T) {
 		BaseRegistry:    "harbor.example.com/baselibrary",
 		DBPassword:      "testpass123",
 		DBImageRegistry: "harbor.example.com/tools",
+		BuildTool:       "docker",
+		BuildCmd:        "build",
 	}
 
 	if err := RenderSkeleton("nextjs-fastapi-pg", params, outDir); err != nil {
@@ -215,6 +223,39 @@ func TestRenderSkeleton_NextjsFastapiPg(t *testing.T) {
 	}
 	if info.Mode()&0100 == 0 {
 		t.Error("build.sh is not executable")
+	}
+}
+
+func TestRenderSkeleton_BuildahBuilder(t *testing.T) {
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "myapp")
+
+	params := Params{
+		Name:      "myapp",
+		Namespace: "sandbox",
+		Registry:  "registry.example.com/ns",
+		Domain:    "example.com",
+		BuildTool: "buildah",
+		BuildCmd:  "bud",
+	}
+
+	if err := RenderSkeleton("nextjs-fastapi", params, outDir); err != nil {
+		t.Fatalf("RenderSkeleton failed: %v", err)
+	}
+
+	buildSh, _ := os.ReadFile(filepath.Join(outDir, "build.sh"))
+	content := string(buildSh)
+	if !strings.Contains(content, "buildah bud") {
+		t.Error("build.sh should use 'buildah bud'")
+	}
+	if !strings.Contains(content, "buildah push") {
+		t.Error("build.sh should use 'buildah push'")
+	}
+	if !strings.Contains(content, "buildah login") {
+		t.Error("build.sh should use 'buildah login'")
+	}
+	if strings.Contains(content, "docker") {
+		t.Error("build.sh should not contain 'docker' when using buildah")
 	}
 }
 

@@ -28,6 +28,8 @@ type Params struct {
 	BaseRegistry    string
 	DBPassword      string
 	DBImageRegistry string
+	BuildTool       string
+	BuildCmd        string
 }
 
 var Templates = []Template{

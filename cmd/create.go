@@ -20,6 +20,7 @@ var (
 	createRegistry     string
 	createDomain       string
 	createBaseRegistry string
+	createBuilder      string
 )
 
 var createCmd = &cobra.Command{
@@ -34,6 +35,7 @@ func init() {
 	createCmd.Flags().StringVar(&createRegistry, "registry", defaultRegistry, "image registry")
 	createCmd.Flags().StringVar(&createDomain, "domain", defaultDomain, "ingress domain")
 	createCmd.Flags().StringVar(&createBaseRegistry, "base-registry", defaultBaseRegistry, "base image registry")
+	createCmd.Flags().StringVar(&createBuilder, "builder", "docker", "container build tool (docker, buildah)")
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
@@ -95,6 +97,11 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 		dbPassword = generatePassword()
 	}
 
+	buildCmd := "build"
+	if createBuilder == "buildah" {
+		buildCmd = "bud"
+	}
+
 	params := scaffold.Params{
 		Name:            name,
 		Namespace:       ns,
@@ -103,6 +110,8 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 		BaseRegistry:    baseRegistry,
 		DBPassword:      dbPassword,
 		DBImageRegistry: defaultDBImageRegistry,
+		BuildTool:       createBuilder,
+		BuildCmd:        buildCmd,
 	}
 
 	if err := scaffold.RenderSkeleton(templateID, params, outDir); err != nil {
