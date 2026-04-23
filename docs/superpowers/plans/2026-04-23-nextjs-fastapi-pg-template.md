@@ -981,7 +981,7 @@ dependencies:
     version: "16"
     database: {{ .Name }}
     password: {{ .DBPassword }}
-    imageRegistry: harbor.cn.svc.corpintra.net/tools
+    imageRegistry: registry.example.com/tools
 ```
 
 - [ ] **Step 2: Create `build.sh.tmpl`**

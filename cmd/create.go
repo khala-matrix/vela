@@ -31,9 +31,9 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&createTemplate, "template", "t", "", "template ID (e.g. nextjs-fastapi, static-site)")
-	createCmd.Flags().StringVar(&createRegistry, "registry", "harbor.cn.svc.corpintra.net/sandboxcoder", "image registry")
-	createCmd.Flags().StringVar(&createDomain, "domain", "devbox.ittz-tech-platform.cn.svc.corpintra.net", "ingress domain")
-	createCmd.Flags().StringVar(&createBaseRegistry, "base-registry", "harbor.cn.svc.corpintra.net/baselibrary", "base image registry")
+	createCmd.Flags().StringVar(&createRegistry, "registry", defaultRegistry, "image registry")
+	createCmd.Flags().StringVar(&createDomain, "domain", defaultDomain, "ingress domain")
+	createCmd.Flags().StringVar(&createBaseRegistry, "base-registry", defaultBaseRegistry, "base image registry")
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
@@ -96,12 +96,13 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 	}
 
 	params := scaffold.Params{
-		Name:         name,
-		Namespace:    ns,
-		Registry:     registry,
-		Domain:       domain,
-		BaseRegistry: baseRegistry,
-		DBPassword:   dbPassword,
+		Name:            name,
+		Namespace:       ns,
+		Registry:        registry,
+		Domain:          domain,
+		BaseRegistry:    baseRegistry,
+		DBPassword:      dbPassword,
+		DBImageRegistry: defaultDBImageRegistry,
 	}
 
 	if err := scaffold.RenderSkeleton(templateID, params, outDir); err != nil {
@@ -179,7 +180,9 @@ type createModel struct {
 }
 
 var createInputLabels = [4]string{"Project name", "Image registry", "Ingress domain", "Base image registry"}
-var createInputPlaceholders = [4]string{"my-app", "harbor.cn.svc.corpintra.net/sandboxcoder", "devbox.ittz-tech-platform.cn.svc.corpintra.net", "harbor.cn.svc.corpintra.net/baselibrary"}
+func getCreateInputPlaceholders() [4]string {
+	return [4]string{"my-app", defaultRegistry, defaultDomain, defaultBaseRegistry}
+}
 
 var (
 	cTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("99"))
@@ -267,7 +270,7 @@ func (m createModel) updateInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			if m.inputs[m.inputIdx] == "" {
-				m.inputs[m.inputIdx] = createInputPlaceholders[m.inputIdx]
+				m.inputs[m.inputIdx] = getCreateInputPlaceholders()[m.inputIdx]
 			}
 			if m.inputIdx < 3 {
 				m.inputIdx++
@@ -334,7 +337,7 @@ func (m createModel) View() string {
 				val := m.inputs[i]
 				placeholder := ""
 				if val == "" {
-					placeholder = cDimStyle.Render(createInputPlaceholders[i])
+					placeholder = cDimStyle.Render(getCreateInputPlaceholders()[i])
 				}
 				fmt.Fprintf(&b, "  %s: %s%s▏\n", cPromptStyle.Render(label), cInputStyle.Render(val), placeholder)
 			} else {

@@ -118,7 +118,7 @@ project/
 ```yaml
 name: myapp
 namespace: default
-cluster: https://43.160.241.144:6443
+cluster: https://10.0.0.1:6443
 last_deployed: "2026-04-22T10:30:00Z"
 revision: 3
 status: deployed

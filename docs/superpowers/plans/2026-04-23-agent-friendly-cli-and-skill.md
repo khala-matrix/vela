@@ -454,9 +454,9 @@ When something doesn't work after deploy:
 
 ## Environment Defaults
 
-- Registry: `harbor.cn.svc.corpintra.net/sandboxcoder`
-- Domain: `devbox.ittz-tech-platform.cn.svc.corpintra.net`
-- Base registry: `harbor.cn.svc.corpintra.net/baselibrary`
+- Registry: configured via `VELA_REGISTRY` env var
+- Domain: configured via `VELA_DOMAIN` env var
+- Base registry: configured via `VELA_BASE_REGISTRY` env var
 - Namespace: `sandbox`
 - kubeconfig: use `--kubeconfig` flag or KUBECONFIG env var
 

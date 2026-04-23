@@ -34,15 +34,17 @@ Available templates:
 func init() {
 	guideCmd.Flags().StringVar(&guideName, "name", "my-app", "project name used in examples")
 	guideCmd.Flags().StringVar(&guideNamespace, "namespace", "sandbox", "namespace used in examples")
-	guideCmd.Flags().StringVar(&guideRegistry, "registry", "harbor.cn.svc.corpintra.net/sandboxcoder", "image registry used in examples")
-	guideCmd.Flags().StringVar(&guideDomain, "domain", "devbox.ittz-tech-platform.cn.svc.corpintra.net", "ingress domain used in examples")
+	guideCmd.Flags().StringVar(&guideRegistry, "registry", defaultRegistry, "image registry used in examples")
+	guideCmd.Flags().StringVar(&guideDomain, "domain", defaultDomain, "ingress domain used in examples")
 }
 
 type guideData struct {
-	Name      string
-	Namespace string
-	Registry  string
-	Domain    string
+	Name            string
+	Namespace       string
+	Registry        string
+	Domain          string
+	BaseRegistry    string
+	DBImageRegistry string
 }
 
 func runGuide(cmd *cobra.Command, args []string) error {
@@ -69,10 +71,12 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	}
 
 	data := guideData{
-		Name:      guideName,
-		Namespace: guideNamespace,
-		Registry:  guideRegistry,
-		Domain:    guideDomain,
+		Name:            guideName,
+		Namespace:       guideNamespace,
+		Registry:        guideRegistry,
+		Domain:          guideDomain,
+		BaseRegistry:    defaultBaseRegistry,
+		DBImageRegistry: defaultDBImageRegistry,
 	}
 
 	tmpl, err := template.New("guide").Parse(guideTmpl)
@@ -161,7 +165,7 @@ dependencies:
     version: "16"
     database: {{ .Name }}
     password: "<password>"
-    imageRegistry: harbor.cn.svc.corpintra.net/tools
+    imageRegistry: {{ .DBImageRegistry }}
 ` + "```" + `
 
 ## build.sh
@@ -234,7 +238,7 @@ receives the complete path including the prefix.
 
 **Backend:**
 ` + "```dockerfile" + `
-FROM harbor.cn.svc.corpintra.net/baselibrary/python:3.12-slim-bookworm
+FROM {{ .BaseRegistry }}/python:3.12-slim-bookworm
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -245,14 +249,14 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 **Frontend (multi-stage):**
 ` + "```dockerfile" + `
-FROM harbor.cn.svc.corpintra.net/baselibrary/node:22-alpine AS builder
+FROM {{ .BaseRegistry }}/node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM harbor.cn.svc.corpintra.net/baselibrary/node:22-alpine
+FROM {{ .BaseRegistry }}/node:22-alpine
 WORKDIR /app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static

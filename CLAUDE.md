@@ -43,4 +43,4 @@ Data flow: `vela create` → project skeleton + `.vela/state.yaml` → user buil
 - Scaffold `Params` includes `Name`, `Namespace`, `Registry`, `Domain`, `BaseRegistry`. Namespace is used as ingress path prefix (`/namespace/appname`) to support LB routing.
 - Ingress path coordination: frontend uses Next.js `basePath: "/ns/app"`, backend uses FastAPI `APIRouter(prefix="/ns/app/api")`, no stripPrefix — Traefik passes the full path through.
 - Dockerfile templates use `{{ .BaseRegistry }}` for corporate base image registries. Multi-stage builds use `USER root` for build stage, `USER 1000` for runtime.
-- Corporate defaults: registry `harbor.cn.svc.corpintra.net/sandboxcoder`, domain `devbox.ittz-tech-platform.cn.svc.corpintra.net`, base-registry `harbor.cn.svc.corpintra.net/baselibrary`.
+- Environment defaults are loaded from `.env` file (see `.env.example`). Configurable via `VELA_REGISTRY`, `VELA_DOMAIN`, `VELA_BASE_REGISTRY`, `VELA_DB_IMAGE_REGISTRY`.

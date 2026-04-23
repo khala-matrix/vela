@@ -154,12 +154,13 @@ func TestRenderSkeleton_StaticSite(t *testing.T) {
 func TestRenderSkeleton_NextjsFastapiPg(t *testing.T) {
 	outDir := t.TempDir()
 	params := Params{
-		Name:         "testapp",
-		Namespace:    "sandbox",
-		Registry:     "harbor.example.com/ns",
-		Domain:       "example.com",
-		BaseRegistry: "harbor.example.com/baselibrary",
-		DBPassword:   "testpass123",
+		Name:            "testapp",
+		Namespace:       "sandbox",
+		Registry:        "harbor.example.com/ns",
+		Domain:          "example.com",
+		BaseRegistry:    "harbor.example.com/baselibrary",
+		DBPassword:      "testpass123",
+		DBImageRegistry: "harbor.example.com/tools",
 	}
 
 	if err := RenderSkeleton("nextjs-fastapi-pg", params, outDir); err != nil {

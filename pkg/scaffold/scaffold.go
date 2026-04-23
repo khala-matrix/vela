@@ -21,12 +21,13 @@ type Template struct {
 }
 
 type Params struct {
-	Name         string
-	Namespace    string
-	Registry     string
-	Domain       string
-	BaseRegistry string
-	DBPassword   string
+	Name            string
+	Namespace       string
+	Registry        string
+	Domain          string
+	BaseRegistry    string
+	DBPassword      string
+	DBImageRegistry string
 }
 
 var Templates = []Template{

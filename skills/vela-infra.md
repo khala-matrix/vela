@@ -124,11 +124,13 @@ When deployment has issues:
 
 ## Environment Defaults
 
-- Registry: `harbor.cn.svc.corpintra.net/sandboxcoder`
-- Domain: `devbox.ittz-tech-platform.cn.svc.corpintra.net`
-- Base registry: `harbor.cn.svc.corpintra.net/baselibrary`
-- DB image registry: `harbor.cn.svc.corpintra.net/tools`
-- Namespace: `sandbox`
+Defaults are loaded from `.env` file in the project root (see `.env.example`). The following environment variables configure vela:
+
+- `VELA_REGISTRY` — image registry (default: `registry.example.com/myteam`)
+- `VELA_DOMAIN` — ingress domain (default: `apps.example.com`)
+- `VELA_BASE_REGISTRY` — base image registry for Dockerfiles
+- `VELA_DB_IMAGE_REGISTRY` — image registry for database containers
+- Namespace: `sandbox` (via `--namespace` flag)
 
 ## Important Rules
 

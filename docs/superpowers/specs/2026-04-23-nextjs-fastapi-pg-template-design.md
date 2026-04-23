@@ -337,7 +337,7 @@ dependencies:
     database: my-app
     password: ...
     storage: 1Gi
-    imageRegistry: harbor.cn.svc.corpintra.net/tools
+    imageRegistry: registry.example.com/tools
 ```
 
 The scaffold template writes `BaseRegistry` into this field. The chart generator reads it and uses it for the PostgreSQL container image.
