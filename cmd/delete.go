@@ -47,6 +47,12 @@ func runDelete(cmd *cobra.Command, args []string) error {
 	st.Status = state.StatusDeleted
 	backend.Save(projectDir, st)
 
+	if isJSON() {
+		return writeJSON(cmd.OutOrStdout(), map[string]any{
+			"name":   st.Name,
+			"status": "deleted",
+		})
+	}
 	fmt.Fprintf(cmd.OutOrStdout(), "App %q deleted.\n", st.Name)
 	return nil
 }

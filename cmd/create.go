@@ -46,6 +46,10 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return generateProject(cmd, name, createTemplate, createRegistry, createDomain, createBaseRegistry)
 	}
 
+	if isJSON() {
+		return fmt.Errorf("--name and --template are required when using --output json (non-interactive mode)")
+	}
+
 	p := tea.NewProgram(newCreateModel(name))
 	m, err := p.Run()
 	if err != nil {
@@ -127,6 +131,15 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 		if err := b.Save(outDir, s); err != nil {
 			return fmt.Errorf("save credentials: %w", err)
 		}
+	}
+
+	if isJSON() {
+		return writeJSON(cmd.OutOrStdout(), map[string]any{
+			"name":      name,
+			"template":  templateID,
+			"directory": outDir,
+			"status":    "created",
+		})
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Created project %s/\n\n", name)
