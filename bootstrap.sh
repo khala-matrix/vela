@@ -43,16 +43,21 @@ detect_platform() {
 
 get_latest_version() {
   local url="https://api.github.com/repos/${REPO}/releases/latest"
+  local auth_header=""
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    auth_header="Authorization: token ${GITHUB_TOKEN}"
+  fi
+
   if command -v curl &>/dev/null; then
-    VERSION=$(curl -fsSL "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"//;s/".*//')
+    VERSION=$(curl -fsSL ${auth_header:+-H "$auth_header"} "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"//;s/".*//')
   elif command -v wget &>/dev/null; then
-    VERSION=$(wget -qO- "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"//;s/".*//')
+    VERSION=$(wget -qO- ${auth_header:+--header="$auth_header"} "$url" | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"//;s/".*//')
   else
     error "Neither curl nor wget found. Install one and retry."
   fi
 
   if [ -z "${VERSION:-}" ]; then
-    error "Failed to fetch latest version from GitHub"
+    error "Failed to fetch latest version from GitHub. If rate-limited, set GITHUB_TOKEN."
   fi
 }
 
