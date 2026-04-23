@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mars/vela/pkg/project"
 	"github.com/mars/vela/pkg/scaffold"
+	"github.com/mars/vela/pkg/state"
 	"github.com/spf13/cobra"
 )
 
@@ -83,20 +86,47 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 
 	ns := cmd.Flag("namespace").Value.String()
 
+	dbPassword := ""
+	if templateID == "nextjs-fastapi-pg" {
+		dbPassword = generatePassword()
+	}
+
 	params := scaffold.Params{
 		Name:         name,
 		Namespace:    ns,
 		Registry:     registry,
 		Domain:       domain,
 		BaseRegistry: baseRegistry,
+		DBPassword:   dbPassword,
 	}
 
 	if err := scaffold.RenderSkeleton(templateID, params, outDir); err != nil {
 		return fmt.Errorf("generate skeleton: %w", err)
 	}
+
 	if err := project.Init(outDir, name, ns); err != nil {
 		os.RemoveAll(outDir)
 		return fmt.Errorf("init project: %w", err)
+	}
+
+	if dbPassword != "" {
+		b := &state.LocalBackend{}
+		s, err := b.Load(outDir)
+		if err != nil {
+			return fmt.Errorf("load state: %w", err)
+		}
+		s.Credentials = map[string]*state.Credential{
+			"postgresql": {
+				Host:     name + "-postgresql",
+				Port:     5432,
+				Database: name,
+				User:     "postgres",
+				Password: dbPassword,
+			},
+		}
+		if err := b.Save(outDir, s); err != nil {
+			return fmt.Errorf("save credentials: %w", err)
+		}
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Created project %s/\n\n", name)
@@ -104,7 +134,16 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain, bas
 	fmt.Fprintf(cmd.OutOrStdout(), "  cd %s\n", name)
 	fmt.Fprintf(cmd.OutOrStdout(), "  ./build.sh        # build & push images\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "  vela deploy       # deploy to cluster\n")
+	if dbPassword != "" {
+		fmt.Fprintf(cmd.OutOrStdout(), "  vela credentials  # show database credentials\n")
+	}
 	return nil
+}
+
+func generatePassword() string {
+	b := make([]byte, 12)
+	rand.Read(b)
+	return hex.EncodeToString(b)[:16]
 }
 
 // --- TUI Model ---

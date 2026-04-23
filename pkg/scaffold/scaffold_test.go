@@ -13,6 +13,7 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 
 	params := Params{
 		Name:         "myapp",
+		Namespace:    "sandbox",
 		Registry:     "registry.example.com/ns",
 		Domain:       "example.com",
 		BaseRegistry: "harbor.example.com/library",
@@ -53,16 +54,16 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 	if !strings.Contains(content, "registry.example.com/ns/myapp-backend:latest") {
 		t.Error("tech-stack.yaml missing backend image")
 	}
-	if !strings.Contains(content, "path: /myapp/api") {
+	if !strings.Contains(content, "path: /sandbox/myapp/api") {
 		t.Error("tech-stack.yaml missing backend ingress path")
 	}
-	if !strings.Contains(content, "path: /myapp") {
+	if !strings.Contains(content, "path: /sandbox/myapp") {
 		t.Error("tech-stack.yaml missing frontend ingress path")
 	}
 
 	nextConfig, _ := os.ReadFile(filepath.Join(outDir, "frontend", "next.config.ts"))
 	ncContent := string(nextConfig)
-	if !strings.Contains(ncContent, `basePath: "/myapp"`) {
+	if !strings.Contains(ncContent, `basePath: "/sandbox/myapp"`) {
 		t.Error("next.config.ts missing basePath")
 	}
 	if !strings.Contains(ncContent, "myapp-myapp-backend:8000") {
