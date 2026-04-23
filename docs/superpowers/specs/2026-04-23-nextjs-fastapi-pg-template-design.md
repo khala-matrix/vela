@@ -233,7 +233,7 @@ Add database section when dependency exists:
 database:
   enabled: true
   type: postgresql
-  image: <baseRegistry>/postgres:16
+  image: <baseRegistry>/postgres:16-alpine
   database: <name>
   storage: 1Gi
 ```
@@ -337,7 +337,7 @@ dependencies:
     database: my-app
     password: ...
     storage: 1Gi
-    imageRegistry: harbor.cn.svc.corpintra.net/baselibrary
+    imageRegistry: harbor.cn.svc.corpintra.net/tools
 ```
 
 The scaffold template writes `BaseRegistry` into this field. The chart generator reads it and uses it for the PostgreSQL container image.
