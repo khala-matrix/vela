@@ -48,4 +48,5 @@ func init() {
 	rootCmd.AddCommand(configureCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(credentialsCmd)
+	rootCmd.AddCommand(guideCmd)
 }
