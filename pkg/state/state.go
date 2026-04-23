@@ -15,11 +15,20 @@ type State struct {
 	Revision     int                     `yaml:"revision,omitempty"`
 	Status       string                  `yaml:"status"`
 	Services     map[string]ServiceState `yaml:"services,omitempty"`
+	Credentials  map[string]*Credential  `yaml:"credentials,omitempty"`
 }
 
 type ServiceState struct {
 	Image       string `yaml:"image"`
 	IngressPath string `yaml:"ingress_path,omitempty"`
+}
+
+type Credential struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Database string `yaml:"database"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
 }
 
 type Backend interface {
