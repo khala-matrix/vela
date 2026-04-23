@@ -14,6 +14,8 @@ interface HealthStatus {
   detail?: string;
 }
 
+const BASE = "/{{ .Namespace }}/{{ .Name }}";
+
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState("");
@@ -22,18 +24,18 @@ export default function Home() {
 
   const fetchTodos = useCallback(async () => {
     try {
-      const res = await fetch("/api/todos");
+      const res = await fetch(`${BASE}/api/todos`);
       if (res.ok) setTodos(await res.json());
     } catch {}
   }, []);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch(`${BASE}/api/health`)
       .then((r) => r.json())
       .then((d) => setApiHealth({ status: d.status }))
       .catch(() => setApiHealth({ status: "error" }));
 
-    fetch("/api/db-health")
+    fetch(`${BASE}/api/db-health`)
       .then((r) => r.json())
       .then((d) => setDbHealth({ status: d.status, detail: d.detail }))
       .catch(() => setDbHealth({ status: "error" }));
@@ -43,7 +45,7 @@ export default function Home() {
 
   const addTodo = async () => {
     if (!title.trim()) return;
-    await fetch("/api/todos", {
+    await fetch(`${BASE}/api/todos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: title.trim() }),
@@ -53,7 +55,7 @@ export default function Home() {
   };
 
   const toggleTodo = async (todo: Todo) => {
-    await fetch(`/api/todos/${todo.id}`, {
+    await fetch(`${BASE}/api/todos/${todo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: !todo.completed }),
@@ -62,7 +64,7 @@ export default function Home() {
   };
 
   const deleteTodo = async (id: number) => {
-    await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    await fetch(`${BASE}/api/todos/${id}`, { method: "DELETE" });
     fetchTodos();
   };
 
