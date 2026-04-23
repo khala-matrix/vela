@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/mars/vela/pkg/config"
@@ -20,12 +21,22 @@ type chartData struct {
 	Services         []config.Service
 	Dependencies     []chartDependency
 	DependencyValues map[string]string
+	Database         *databaseConfig
 }
 
 type chartDependency struct {
 	ChartName  string
 	Version    string
 	Repository string
+}
+
+type databaseConfig struct {
+	Enabled  bool
+	Type     string
+	Image    string
+	Database string
+	Password string
+	Storage  string
 }
 
 func Generate(ts *config.TechStack, outDir string) error {
@@ -42,6 +53,7 @@ func Generate(ts *config.TechStack, outDir string) error {
 		"templates/templates/service.yaml.tmpl":    filepath.Join(outDir, "templates", "service.yaml"),
 		"templates/templates/_helpers.tpl.tmpl":    filepath.Join(outDir, "templates", "_helpers.tpl"),
 		"templates/templates/ingress.yaml.tmpl":    filepath.Join(outDir, "templates", "ingress.yaml"),
+		"templates/templates/database.yaml.tmpl":   filepath.Join(outDir, "templates", "database.yaml"),
 	}
 
 	for tmplPath, outPath := range files {
@@ -61,6 +73,28 @@ func buildChartData(ts *config.TechStack) chartData {
 	}
 
 	for name, dep := range ts.Dependencies {
+		if name == "postgresql" && dep.ImageRegistry != "" {
+			image := dep.ImageRegistry + "/postgres:" + dep.Version
+			if !strings.Contains(dep.Version, "-") {
+				image += "-alpine"
+			}
+			data.Database = &databaseConfig{
+				Enabled:  true,
+				Type:     "postgresql",
+				Image:    image,
+				Database: dep.Database,
+				Password: dep.Password,
+				Storage:  dep.Storage,
+			}
+			if data.Database.Storage == "" {
+				data.Database.Storage = "1Gi"
+			}
+			if data.Database.Database == "" {
+				data.Database.Database = ts.ProjectName()
+			}
+			continue
+		}
+
 		info, ok := DependencyRegistry[name]
 		if !ok {
 			continue

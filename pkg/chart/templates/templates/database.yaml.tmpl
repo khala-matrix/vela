@@ -1,0 +1,85 @@
+{{ "{{- if .Values.database }}" }}
+{{ "{{- if .Values.database.enabled }}" }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+  labels:
+    {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: {{ "{{ .Values.database.password }}" }}
+  DATABASE_URL: "postgresql+asyncpg://postgres:{{ "{{ .Values.database.password }}" }}@{{ "{{ include \"chart.fullname\" $ }}" }}-postgresql:5432/{{ "{{ .Values.database.database }}" }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+  labels:
+    {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ "{{ .Values.database.storage }}" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+  labels:
+    {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
+    app.kubernetes.io/component: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- "{{ include \"chart.selectorLabels\" $ | nindent 6 }}" }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- "{{ include \"chart.selectorLabels\" $ | nindent 8 }}" }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ "{{ .Values.database.image }}" }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: {{ "{{ .Values.database.database }}" }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ "{{ include \"chart.fullname\" $ }}" }}-postgresql
+  labels:
+    {{- "{{ include \"chart.labels\" $ | nindent 4 }}" }}
+    app.kubernetes.io/component: postgresql
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    {{- "{{ include \"chart.selectorLabels\" $ | nindent 4 }}" }}
+    app.kubernetes.io/component: postgresql
+{{ "{{- end }}" }}
+{{ "{{- end }}" }}

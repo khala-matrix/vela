@@ -151,6 +151,72 @@ func TestRenderSkeleton_StaticSite(t *testing.T) {
 	}
 }
 
+func TestRenderSkeleton_NextjsFastapiPg(t *testing.T) {
+	outDir := t.TempDir()
+	params := Params{
+		Name:         "testapp",
+		Namespace:    "sandbox",
+		Registry:     "harbor.example.com/ns",
+		Domain:       "example.com",
+		BaseRegistry: "harbor.example.com/baselibrary",
+		DBPassword:   "testpass123",
+	}
+
+	if err := RenderSkeleton("nextjs-fastapi-pg", params, outDir); err != nil {
+		t.Fatalf("RenderSkeleton failed: %v", err)
+	}
+
+	mainPy, err := os.ReadFile(filepath.Join(outDir, "backend", "main.py"))
+	if err != nil {
+		t.Fatalf("backend/main.py missing: %v", err)
+	}
+	mainContent := string(mainPy)
+	if !strings.Contains(mainContent, "testapp-postgresql:5432/testapp") {
+		t.Error("main.py missing correct DATABASE_URL")
+	}
+	if !strings.Contains(mainContent, "testpass123") {
+		t.Error("main.py missing DB password")
+	}
+	if !strings.Contains(mainContent, "/sandbox/testapp/api") {
+		t.Error("main.py missing correct API prefix")
+	}
+
+	pageTsx, err := os.ReadFile(filepath.Join(outDir, "frontend", "src", "app", "page.tsx"))
+	if err != nil {
+		t.Fatalf("page.tsx missing: %v", err)
+	}
+	if !strings.Contains(string(pageTsx), "/api/db-health") {
+		t.Error("page.tsx missing db-health check")
+	}
+	if !strings.Contains(string(pageTsx), "/api/todos") {
+		t.Error("page.tsx missing todos API calls")
+	}
+
+	techStack, err := os.ReadFile(filepath.Join(outDir, "tech-stack.yaml"))
+	if err != nil {
+		t.Fatalf("tech-stack.yaml missing: %v", err)
+	}
+	tsContent := string(techStack)
+	if !strings.Contains(tsContent, "postgresql:") {
+		t.Error("tech-stack.yaml missing postgresql dependency")
+	}
+	if !strings.Contains(tsContent, "testpass123") {
+		t.Error("tech-stack.yaml missing DB password")
+	}
+	if !strings.Contains(tsContent, "imageRegistry:") {
+		t.Error("tech-stack.yaml missing imageRegistry")
+	}
+
+	buildSh := filepath.Join(outDir, "build.sh")
+	info, err := os.Stat(buildSh)
+	if err != nil {
+		t.Fatalf("build.sh missing: %v", err)
+	}
+	if info.Mode()&0100 == 0 {
+		t.Error("build.sh is not executable")
+	}
+}
+
 func TestRenderSkeleton_InvalidTemplate(t *testing.T) {
 	dir := t.TempDir()
 	err := RenderSkeleton("nonexistent-template", Params{Name: "x"}, dir)

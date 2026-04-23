@@ -26,6 +26,15 @@ services:
       stripPrefix: {{ .Ingress.StripPrefixEnabled }}
     {{- end }}
 {{- end }}
+{{- if .Database }}
+database:
+  enabled: {{ .Database.Enabled }}
+  type: {{ .Database.Type }}
+  image: {{ .Database.Image }}
+  database: {{ .Database.Database }}
+  password: {{ .Database.Password }}
+  storage: {{ .Database.Storage }}
+{{- end }}
 {{ range $key, $vals := .DependencyValues }}
 {{ $key }}:
 {{ $vals }}

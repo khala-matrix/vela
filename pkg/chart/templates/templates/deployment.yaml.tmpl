@@ -35,4 +35,8 @@ spec:
           {{- "{{ if $svc.env }}" }}
             {{- "{{ toYaml $svc.env | nindent 12 }}" }}
           {{- "{{ end }}" }}
+          {{ "{{- if $svc.envFrom }}" }}
+          envFrom:
+            {{- "{{ toYaml $svc.envFrom | nindent 12 }}" }}
+          {{ "{{- end }}" }}
 {{ "{{- end }}" }}

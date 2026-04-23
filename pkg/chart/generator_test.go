@@ -151,6 +151,74 @@ func TestGenerate_WithEnvVars(t *testing.T) {
 	}
 }
 
+func TestGenerate_WithNativePostgresql(t *testing.T) {
+	outDir := t.TempDir()
+
+	ts := &config.TechStack{
+		Name: "myapp",
+		Services: []config.Service{
+			{
+				Name:     "myapp-backend",
+				Image:    "registry/myapp-backend:latest",
+				Port:     8000,
+				Replicas: 1,
+				Env: []config.EnvVar{
+					{Name: "DATABASE_URL", Value: "postgresql+asyncpg://postgres:secret@myapp-postgresql:5432/myapp"},
+				},
+				Resources: config.Resources{CPU: "250m", Memory: "256Mi"},
+			},
+		},
+		Dependencies: map[string]*config.Dependency{
+			"postgresql": {
+				Version:       "16",
+				Database:      "myapp",
+				Password:      "secret",
+				Storage:       "2Gi",
+				ImageRegistry: "harbor.example.com/tools",
+			},
+		},
+	}
+
+	if err := Generate(ts, outDir); err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	chartYaml, _ := os.ReadFile(filepath.Join(outDir, "Chart.yaml"))
+	if strings.Contains(string(chartYaml), "bitnami") {
+		t.Error("Chart.yaml should not have bitnami dependency for native postgresql")
+	}
+
+	valuesYaml, _ := os.ReadFile(filepath.Join(outDir, "values.yaml"))
+	valuesContent := string(valuesYaml)
+	if !strings.Contains(valuesContent, "database:") {
+		t.Error("values.yaml missing database section")
+	}
+	if !strings.Contains(valuesContent, "harbor.example.com/tools/postgres:16-alpine") {
+		t.Error("values.yaml missing correct database image")
+	}
+	if !strings.Contains(valuesContent, "storage: 2Gi") {
+		t.Error("values.yaml missing storage")
+	}
+
+	dbYaml, err := os.ReadFile(filepath.Join(outDir, "templates", "database.yaml"))
+	if err != nil {
+		t.Fatalf("database.yaml missing: %v", err)
+	}
+	dbContent := string(dbYaml)
+	if !strings.Contains(dbContent, "kind: Secret") {
+		t.Error("database.yaml missing Secret")
+	}
+	if !strings.Contains(dbContent, "kind: PersistentVolumeClaim") {
+		t.Error("database.yaml missing PVC")
+	}
+	if !strings.Contains(dbContent, "kind: Deployment") {
+		t.Error("database.yaml missing Deployment")
+	}
+	if !strings.Contains(dbContent, "kind: Service") {
+		t.Error("database.yaml missing Service")
+	}
+}
+
 func TestGenerate_MultiService(t *testing.T) {
 	outDir := t.TempDir()
 
