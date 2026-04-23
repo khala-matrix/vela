@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Vela — a Go CLI for generating Helm charts from `tech-stack.yaml` specs and deploying them to k3s clusters. Single binary, no runtime dependency on helm CLI. Designed for use as a CI pipeline tool and interactively from devbox development containers.
+Vela — a Go CLI for generating Helm charts from `tech-stack.yaml` specs and deploying them to k3s clusters. Single binary, no runtime dependency on helm CLI. Designed for use as a CI pipeline tool and interactively from devbox development containers. Default target is a corporate k3s cluster behind an LB with Traefik ingress controller.
 
 ## Build & Test
 
@@ -28,7 +28,7 @@ Project state lives in `.vela/` directory (like `.git/`). Created by `vela creat
 - `pkg/state` — `Backend` interface + `LocalBackend` for `.vela/state.yaml` read/write
 - `pkg/project` — `.vela/` directory detection (`Find`) and initialization (`Init`)
 - `pkg/helm` — wraps Helm Go SDK for install/upgrade/uninstall/status/list
-- `pkg/kube` — wraps client-go for Pod status queries and log streaming
+- `pkg/kube` — wraps client-go for Pod status queries, log streaming, and resource queries (ingresses, services)
 
 Data flow: `vela create` → project skeleton + `.vela/state.yaml` → user builds images → `vela deploy` → `config.Parse()` → `chart.Generate()` → `.vela/chart/` → `helm.Install()` → k3s cluster → state synced to `.vela/state.yaml`.
 
@@ -37,5 +37,10 @@ Data flow: `vela create` → project skeleton + `.vela/state.yaml` → user buil
 - Skeleton template files live in `pkg/scaffold/skeletons/<template-id>/` and are embedded via `//go:embed all:skeletons`. Each `.tmpl` file is rendered with `text/template` and written with the `.tmpl` suffix stripped.
 - Chart template files live in `pkg/chart/templates/` and are embedded via `//go:embed all:templates`. Helm template syntax is escaped in Go templates using `{{ "{{ .Values.x }}" }}`.
 - `pkg/kube` has a `NewFromClientset()` constructor for tests using `k8s.io/client-go/kubernetes/fake`.
-- Global flags (kubeconfig, namespace, verbose) are defined as PersistentFlags on the root command and accessed via `cmd.Flag("name").Value.String()` in subcommands.
+- Global flags (kubeconfig, namespace, verbose, insecure) are defined as PersistentFlags on the root command and accessed via `cmd.Flag("name").Value.String()` in subcommands. Default namespace is `sandbox`.
+- `--insecure` flag skips TLS certificate verification for k3s clusters with self-signed certs. Implemented via custom `insecureGetter` in `pkg/helm` that wraps the full RESTClientGetter interface.
 - State backend is pluggable via the `state.Backend` interface. Only `LocalBackend` is implemented.
+- Scaffold `Params` includes `Name`, `Namespace`, `Registry`, `Domain`, `BaseRegistry`. Namespace is used as ingress path prefix (`/namespace/appname`) to support LB routing.
+- Ingress path coordination: frontend uses Next.js `basePath: "/ns/app"`, backend uses FastAPI `APIRouter(prefix="/ns/app/api")`, no stripPrefix — Traefik passes the full path through.
+- Dockerfile templates use `{{ .BaseRegistry }}` for corporate base image registries. Multi-stage builds use `USER root` for build stage, `USER 1000` for runtime.
+- Corporate defaults: registry `harbor.cn.svc.corpintra.net/sandboxcoder`, domain `devbox.ittz-tech-platform.cn.svc.corpintra.net`, base-registry `harbor.cn.svc.corpintra.net/baselibrary`.
