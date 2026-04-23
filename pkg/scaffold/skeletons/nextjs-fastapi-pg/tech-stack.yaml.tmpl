@@ -1,0 +1,31 @@
+name: {{ .Name }}
+ingress:
+  host: {{ .Domain }}
+services:
+  - name: {{ .Name }}-backend
+    image: {{ .Registry }}/{{ .Name }}-backend:latest
+    port: 8000
+    env:
+      - name: CORS_ORIGINS
+        value: "*"
+      - name: PYTHONUNBUFFERED
+        value: "1"
+      - name: DATABASE_URL
+        value: "postgresql+asyncpg://postgres:{{ .DBPassword }}@{{ .Name }}-postgresql:5432/{{ .Name }}"
+    ingress:
+      enabled: true
+      path: /{{ .Namespace }}/{{ .Name }}/api
+      stripPrefix: false
+  - name: {{ .Name }}-frontend
+    image: {{ .Registry }}/{{ .Name }}-frontend:latest
+    port: 3000
+    ingress:
+      enabled: true
+      path: /{{ .Namespace }}/{{ .Name }}
+      stripPrefix: false
+dependencies:
+  postgresql:
+    version: "16"
+    database: {{ .Name }}
+    password: {{ .DBPassword }}
+    imageRegistry: harbor.cn.svc.corpintra.net/tools

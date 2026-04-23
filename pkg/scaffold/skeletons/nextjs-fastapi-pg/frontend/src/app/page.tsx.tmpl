@@ -1,0 +1,146 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+interface Todo {
+  id: number;
+  title: string;
+  completed: boolean;
+  created_at: string;
+}
+
+interface HealthStatus {
+  status: "loading" | "ok" | "error";
+  detail?: string;
+}
+
+export default function Home() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [title, setTitle] = useState("");
+  const [apiHealth, setApiHealth] = useState<HealthStatus>({ status: "loading" });
+  const [dbHealth, setDbHealth] = useState<HealthStatus>({ status: "loading" });
+
+  const fetchTodos = useCallback(async () => {
+    try {
+      const res = await fetch("/api/todos");
+      if (res.ok) setTodos(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/health")
+      .then((r) => r.json())
+      .then((d) => setApiHealth({ status: d.status }))
+      .catch(() => setApiHealth({ status: "error" }));
+
+    fetch("/api/db-health")
+      .then((r) => r.json())
+      .then((d) => setDbHealth({ status: d.status, detail: d.detail }))
+      .catch(() => setDbHealth({ status: "error" }));
+
+    fetchTodos();
+  }, [fetchTodos]);
+
+  const addTodo = async () => {
+    if (!title.trim()) return;
+    await fetch("/api/todos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title.trim() }),
+    });
+    setTitle("");
+    fetchTodos();
+  };
+
+  const toggleTodo = async (todo: Todo) => {
+    await fetch(`/api/todos/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !todo.completed }),
+    });
+    fetchTodos();
+  };
+
+  const deleteTodo = async (id: number) => {
+    await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    fetchTodos();
+  };
+
+  const dot = (s: HealthStatus) =>
+    s.status === "loading"
+      ? "bg-gray-500"
+      : s.status === "ok"
+        ? "bg-green-500"
+        : "bg-red-500";
+
+  return (
+    <main className="mx-auto max-w-xl px-4 py-12">
+      <h1 className="mb-6 text-3xl font-bold">{{ .Name }}</h1>
+
+      <div className="mb-8 flex gap-6 text-sm">
+        <span className="flex items-center gap-2">
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${dot(apiHealth)}`} />
+          API Health: {apiHealth.status}
+        </span>
+        <span className="flex items-center gap-2">
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${dot(dbHealth)}`} />
+          DB Health: {dbHealth.status}
+        </span>
+      </div>
+
+      <div className="mb-6 flex gap-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTodo()}
+          placeholder="Add a todo..."
+          className="flex-1 rounded bg-gray-800 px-3 py-2 text-gray-100 placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={addTodo}
+          className="rounded bg-blue-600 px-4 py-2 font-medium hover:bg-blue-500"
+        >
+          Add
+        </button>
+      </div>
+
+      <ul className="space-y-2">
+        {todos.map((todo) => (
+          <li
+            key={todo.id}
+            className="flex items-center gap-3 rounded bg-gray-800/50 px-3 py-2"
+          >
+            <button
+              onClick={() => toggleTodo(todo)}
+              className={`h-5 w-5 shrink-0 rounded border ${
+                todo.completed
+                  ? "border-green-500 bg-green-500/20 text-green-400"
+                  : "border-gray-600"
+              } flex items-center justify-center text-xs`}
+            >
+              {todo.completed && "✓"}
+            </button>
+            <span
+              className={`flex-1 ${todo.completed ? "text-gray-500 line-through" : ""}`}
+            >
+              {todo.title}
+            </span>
+            <span className="text-xs text-gray-600">
+              {new Date(todo.created_at).toLocaleDateString()}
+            </span>
+            <button
+              onClick={() => deleteTodo(todo.id)}
+              className="text-gray-500 hover:text-red-400"
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {todos.length === 0 && (
+        <p className="mt-4 text-center text-gray-500">No todos yet.</p>
+      )}
+    </main>
+  );
+}

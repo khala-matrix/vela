@@ -1,0 +1,16 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  output: "standalone",
+  basePath: "/{{ .Namespace }}/{{ .Name }}",
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${process.env.API_BACKEND_URL || "http://{{ .Name }}-{{ .Name }}-backend:8000"}/{{ .Namespace }}/{{ .Name }}/api/:path*`,
+      },
+    ];
+  },
+};
+
+export default nextConfig;

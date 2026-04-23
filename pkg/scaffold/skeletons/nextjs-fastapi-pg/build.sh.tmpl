@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGISTRY="${REGISTRY:-{{ .Registry }}}"
+TAG="${TAG:-latest}"
+PLATFORM="${PLATFORM:-linux/amd64}"
+
+if [ -n "${REGISTRY_USER:-}" ] && [ -n "${REGISTRY_PASSWORD:-}" ]; then
+  echo "==> Logging in to ${REGISTRY%%/*}"
+  echo "${REGISTRY_PASSWORD}" | docker login "${REGISTRY%%/*}" -u "${REGISTRY_USER}" --password-stdin
+else
+  echo "==> REGISTRY_USER / REGISTRY_PASSWORD not set, skipping login"
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "==> Building {{ .Name }}-backend (${PLATFORM})"
+docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" "${SCRIPT_DIR}/backend"
+
+echo "==> Building {{ .Name }}-frontend (${PLATFORM})"
+docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" "${SCRIPT_DIR}/frontend"
+
+echo "==> Pushing images"
+docker push "${REGISTRY}/{{ .Name }}-backend:${TAG}"
+docker push "${REGISTRY}/{{ .Name }}-frontend:${TAG}"
+
+echo "==> Done"
