@@ -12,10 +12,12 @@ services:
         value: "1"
     ingress:
       enabled: true
-      path: /{{ .Name }}/api
+      path: /{{ .Namespace }}/{{ .Name }}/api
+      stripPrefix: false
   - name: {{ .Name }}-frontend
     image: {{ .Registry }}/{{ .Name }}-frontend:latest
     port: 3000
     ingress:
       enabled: true
-      path: /{{ .Name }}
+      path: /{{ .Namespace }}/{{ .Name }}
+      stripPrefix: false

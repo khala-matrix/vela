@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	createTemplate string
-	createRegistry string
-	createDomain   string
+	createTemplate     string
+	createRegistry     string
+	createDomain       string
+	createBaseRegistry string
 )
 
 var createCmd = &cobra.Command{
@@ -27,8 +28,9 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&createTemplate, "template", "t", "", "template ID (e.g. nextjs-fastapi, static-site)")
-	createCmd.Flags().StringVar(&createRegistry, "registry", "", "image registry (e.g. registry.example.com/ns)")
-	createCmd.Flags().StringVar(&createDomain, "domain", "", "ingress domain (e.g. example.com)")
+	createCmd.Flags().StringVar(&createRegistry, "registry", "harbor.cn.svc.corpintra.net/sandboxcoder", "image registry")
+	createCmd.Flags().StringVar(&createDomain, "domain", "devbox.ittz-tech-platform.cn.svc.corpintra.net", "ingress domain")
+	createCmd.Flags().StringVar(&createBaseRegistry, "base-registry", "harbor.cn.svc.corpintra.net/baselibrary", "base image registry")
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
@@ -38,7 +40,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	if name != "" && createTemplate != "" && createRegistry != "" && createDomain != "" {
-		return generateProject(cmd, name, createTemplate, createRegistry, createDomain)
+		return generateProject(cmd, name, createTemplate, createRegistry, createDomain, createBaseRegistry)
 	}
 
 	p := tea.NewProgram(newCreateModel(name))
@@ -54,10 +56,10 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	tmpl := scaffold.Templates[final.templateIdx]
-	return generateProject(cmd, final.inputs[0], tmpl.ID, final.inputs[1], final.inputs[2])
+	return generateProject(cmd, final.inputs[0], tmpl.ID, final.inputs[1], final.inputs[2], final.inputs[3])
 }
 
-func generateProject(cmd *cobra.Command, name, templateID, registry, domain string) error {
+func generateProject(cmd *cobra.Command, name, templateID, registry, domain, baseRegistry string) error {
 	outDir := name
 
 	if _, err := os.Stat(outDir); err == nil {
@@ -79,17 +81,19 @@ func generateProject(cmd *cobra.Command, name, templateID, registry, domain stri
 		return fmt.Errorf("unknown template %q, available: %s", templateID, strings.Join(ids, ", "))
 	}
 
+	ns := cmd.Flag("namespace").Value.String()
+
 	params := scaffold.Params{
-		Name:     name,
-		Registry: registry,
-		Domain:   domain,
+		Name:         name,
+		Namespace:    ns,
+		Registry:     registry,
+		Domain:       domain,
+		BaseRegistry: baseRegistry,
 	}
 
 	if err := scaffold.RenderSkeleton(templateID, params, outDir); err != nil {
 		return fmt.Errorf("generate skeleton: %w", err)
 	}
-
-	ns := cmd.Flag("namespace").Value.String()
 	if err := project.Init(outDir, name, ns); err != nil {
 		os.RemoveAll(outDir)
 		return fmt.Errorf("init project: %w", err)
@@ -117,13 +121,13 @@ type createModel struct {
 	step        createStep
 	templateIdx int
 	inputIdx    int
-	inputs      [3]string
+	inputs      [4]string
 	cancelled   bool
 	width       int
 }
 
-var createInputLabels = [3]string{"Project name", "Image registry", "Ingress domain"}
-var createInputPlaceholders = [3]string{"my-app", "registry.example.com/namespace", "example.com"}
+var createInputLabels = [4]string{"Project name", "Image registry", "Ingress domain", "Base image registry"}
+var createInputPlaceholders = [4]string{"my-app", "harbor.cn.svc.corpintra.net/sandboxcoder", "devbox.ittz-tech-platform.cn.svc.corpintra.net", "harbor.cn.svc.corpintra.net/baselibrary"}
 
 var (
 	cTitleStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("99"))
@@ -171,7 +175,7 @@ func (m createModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.step == createStepConfirm {
 				m.step = createStepInput
-				m.inputIdx = 2
+				m.inputIdx = 3
 				return m, nil
 			}
 		}
@@ -213,7 +217,7 @@ func (m createModel) updateInput(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputs[m.inputIdx] == "" {
 				m.inputs[m.inputIdx] = createInputPlaceholders[m.inputIdx]
 			}
-			if m.inputIdx < 2 {
+			if m.inputIdx < 3 {
 				m.inputIdx++
 			} else {
 				m.step = createStepConfirm
@@ -239,7 +243,7 @@ func (m createModel) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "n":
 			m.step = createStepInput
 			m.inputIdx = 0
-			m.inputs = [3]string{}
+			m.inputs = [4]string{}
 		}
 	}
 	return m, nil
@@ -270,7 +274,7 @@ func (m createModel) View() string {
 		tmpl := scaffold.Templates[m.templateIdx]
 		fmt.Fprintf(&b, "Template: %s\n\n", cSelectedStyle.Render(tmpl.Name))
 
-		for i := range 3 {
+		for i := range 4 {
 			label := createInputLabels[i]
 			if i < m.inputIdx {
 				fmt.Fprintf(&b, "  %s: %s\n", cDimStyle.Render(label), cInputStyle.Render(m.inputs[i]))
@@ -290,10 +294,13 @@ func (m createModel) View() string {
 	case createStepConfirm:
 		tmpl := scaffold.Templates[m.templateIdx]
 		b.WriteString("Review:\n\n")
-		fmt.Fprintf(&b, "  Template: %s\n", cSelectedStyle.Render(tmpl.Name))
-		fmt.Fprintf(&b, "  Project:  %s\n", cInputStyle.Render(m.inputs[0]))
-		fmt.Fprintf(&b, "  Registry: %s\n", cInputStyle.Render(m.inputs[1]))
-		fmt.Fprintf(&b, "  Domain:   %s\n", cInputStyle.Render(m.inputs[2]))
+		fmt.Fprintf(&b, "  Template:       %s\n", cSelectedStyle.Render(tmpl.Name))
+		fmt.Fprintf(&b, "  Project:        %s\n", cInputStyle.Render(m.inputs[0]))
+		fmt.Fprintf(&b, "  Registry:       %s\n", cInputStyle.Render(m.inputs[1]))
+		fmt.Fprintf(&b, "  Domain:         %s\n", cInputStyle.Render(m.inputs[2]))
+		if m.inputs[3] != "" {
+			fmt.Fprintf(&b, "  Base registry:  %s\n", cInputStyle.Render(m.inputs[3]))
+		}
 		b.WriteString(cDimStyle.Render("\nenter/y generate • n restart • esc back"))
 	}
 

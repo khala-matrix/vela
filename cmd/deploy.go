@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/mars/vela/pkg/chart"
 	"github.com/mars/vela/pkg/config"
 	"github.com/mars/vela/pkg/helm"
+	"github.com/mars/vela/pkg/kube"
 	"github.com/mars/vela/pkg/project"
 	"github.com/mars/vela/pkg/state"
 	"github.com/spf13/cobra"
@@ -53,7 +55,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 	kubeconfigVal := cmd.Flag("kubeconfig").Value.String()
 	ns := cmd.Flag("namespace").Value.String()
-	hc := helm.New(kubeconfigVal, ns)
+	hc := helm.New(kubeconfigVal, ns, insecure)
 	name := ts.ProjectName()
 
 	if hc.ReleaseExists(name) {
@@ -91,7 +93,20 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	backend.Save(projectDir, st)
 
-	fmt.Fprintf(cmd.OutOrStdout(), "App %q deployed successfully.\n", name)
+	fmt.Fprintf(cmd.OutOrStdout(), "App %q deployed successfully.\n\n", name)
+
+	kc, err := kube.New(kubeconfigVal, ns, insecure)
+	if err == nil {
+		ingresses, err := kc.GetIngresses(context.Background(), name)
+		if err == nil && len(ingresses) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "Ingress:")
+			for _, ing := range ingresses {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %s → %s\n", ing.Name, ing.URL)
+			}
+			fmt.Fprintln(cmd.OutOrStdout())
+		}
+	}
+
 	fmt.Fprintln(cmd.OutOrStdout(), "Run 'vela status' to check deployment status.")
 	return nil
 }

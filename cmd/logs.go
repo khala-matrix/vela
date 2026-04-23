@@ -47,7 +47,7 @@ func runLogs(cmd *cobra.Command, args []string) error {
 	kubeconfigVal := cmd.Flag("kubeconfig").Value.String()
 	ns := cmd.Flag("namespace").Value.String()
 
-	kc, err := kube.New(kubeconfigVal, ns)
+	kc, err := kube.New(kubeconfigVal, ns, insecure)
 	if err != nil {
 		return fmt.Errorf("create kube client: %w", err)
 	}

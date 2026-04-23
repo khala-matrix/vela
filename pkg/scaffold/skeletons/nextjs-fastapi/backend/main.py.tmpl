@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
@@ -11,12 +11,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+router = APIRouter(prefix="/{{ .Namespace }}/{{ .Name }}/api")
 
-@app.get("/api/health")
+
+@router.get("/health")
 def health():
     return {"status": "ok"}
 
 
-@app.get("/api/hello")
+@router.get("/hello")
 def hello():
     return {"message": "Hello from {{ .Name }}"}
+
+
+app.include_router(router)

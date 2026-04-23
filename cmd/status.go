@@ -36,7 +36,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	kubeconfigVal := cmd.Flag("kubeconfig").Value.String()
 	ns := cmd.Flag("namespace").Value.String()
 
-	hc := helm.New(kubeconfigVal, ns)
+	hc := helm.New(kubeconfigVal, ns, insecure)
 	rel, err := hc.Status(st.Name)
 	if err != nil {
 		fmt.Fprintf(cmd.OutOrStdout(), "App %q is not deployed to the cluster.\n", st.Name)
@@ -57,7 +57,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	st.Revision = rel.Revision
 	backend.Save(projectDir, st)
 
-	kc, err := kube.New(kubeconfigVal, ns)
+	kc, err := kube.New(kubeconfigVal, ns, insecure)
 	if err != nil {
 		return fmt.Errorf("create kube client: %w", err)
 	}
@@ -83,5 +83,28 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", pod.Name, pod.Status, ready)
 	}
 	w.Flush()
+
+	services, err := kc.GetServices(context.Background(), st.Name)
+	if err == nil && len(services) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "\nServices:")
+		w = tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAME\tTYPE\tCLUSTER-IP\tPORTS")
+		for _, svc := range services {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", svc.Name, svc.Type, svc.ClusterIP, svc.Ports)
+		}
+		w.Flush()
+	}
+
+	ingresses, err := kc.GetIngresses(context.Background(), st.Name)
+	if err == nil && len(ingresses) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "\nIngress:")
+		w = tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAME\tURL")
+		for _, ing := range ingresses {
+			fmt.Fprintf(w, "%s\t%s\n", ing.Name, ing.URL)
+		}
+		w.Flush()
+	}
+
 	return nil
 }

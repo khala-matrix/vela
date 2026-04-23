@@ -1,4 +1,3 @@
-// pkg/helm/client.go
 package helm
 
 import (
@@ -10,12 +9,19 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Client struct {
 	settings   *cli.EnvSettings
 	namespace  string
 	kubeconfig string
+	insecure   bool
 }
 
 type ReleaseInfo struct {
@@ -26,7 +32,7 @@ type ReleaseInfo struct {
 	Updated   time.Time
 }
 
-func New(kubeconfig, namespace string) *Client {
+func New(kubeconfig, namespace string, insecure bool) *Client {
 	settings := cli.New()
 	settings.KubeConfig = kubeconfig
 	settings.SetNamespace(namespace)
@@ -34,6 +40,7 @@ func New(kubeconfig, namespace string) *Client {
 		settings:   settings,
 		namespace:  namespace,
 		kubeconfig: kubeconfig,
+		insecure:   insecure,
 	}
 }
 
@@ -42,10 +49,60 @@ func (c *Client) actionConfig() (*action.Configuration, error) {
 	logFunc := func(format string, v ...interface{}) {
 		log.Printf(format, v...)
 	}
-	if err := cfg.Init(c.settings.RESTClientGetter(), c.namespace, "secret", logFunc); err != nil {
-		return nil, fmt.Errorf("init helm config: %w", err)
+
+	if c.insecure {
+		getter := &insecureGetter{kubeconfig: c.kubeconfig, namespace: c.namespace}
+		if err := cfg.Init(getter, c.namespace, "secret", logFunc); err != nil {
+			return nil, fmt.Errorf("init helm config: %w", err)
+		}
+	} else {
+		if err := cfg.Init(c.settings.RESTClientGetter(), c.namespace, "secret", logFunc); err != nil {
+			return nil, fmt.Errorf("init helm config: %w", err)
+		}
 	}
 	return cfg, nil
+}
+
+type insecureGetter struct {
+	kubeconfig string
+	namespace  string
+}
+
+func (g *insecureGetter) ToRESTConfig() (*rest.Config, error) {
+	config, err := g.ToRawKubeConfigLoader().ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	config.TLSClientConfig.Insecure = true
+	return config, nil
+}
+
+func (g *insecureGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := g.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return memory.NewMemCacheClient(dc), nil
+}
+
+func (g *insecureGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	dc, err := g.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	return restmapper.NewDeferredDiscoveryRESTMapper(dc), nil
+}
+
+func (g *insecureGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: g.kubeconfig}
+	overrides := &clientcmd.ConfigOverrides{}
+	overrides.ClusterInfo.InsecureSkipTLSVerify = true
+	overrides.Context.Namespace = g.namespace
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
 }
 
 func (c *Client) Install(name, chartDir string) error {

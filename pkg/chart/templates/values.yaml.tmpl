@@ -23,6 +23,7 @@ services:
       enabled: {{ .Ingress.Enabled }}
       host: {{ .Ingress.Host }}
       path: {{ .Ingress.Path }}
+      stripPrefix: {{ .Ingress.StripPrefixEnabled }}
     {{- end }}
 {{- end }}
 {{ range $key, $vals := .DependencyValues }}

@@ -12,9 +12,10 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 	outDir := filepath.Join(dir, "myapp")
 
 	params := Params{
-		Name:     "myapp",
-		Registry: "registry.example.com/ns",
-		Domain:   "example.com",
+		Name:         "myapp",
+		Registry:     "registry.example.com/ns",
+		Domain:       "example.com",
+		BaseRegistry: "harbor.example.com/library",
 	}
 
 	if err := RenderSkeleton("nextjs-fastapi", params, outDir); err != nil {
@@ -76,6 +77,41 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 	info, _ := os.Stat(filepath.Join(outDir, "build.sh"))
 	if info.Mode().Perm()&0100 == 0 {
 		t.Error("build.sh is not executable")
+	}
+
+	backendDockerfile, _ := os.ReadFile(filepath.Join(outDir, "backend", "Dockerfile"))
+	if !strings.Contains(string(backendDockerfile), "harbor.example.com/library/python:3.12-slim-bookworm") {
+		t.Error("backend Dockerfile missing base registry prefix")
+	}
+
+	frontendDockerfile, _ := os.ReadFile(filepath.Join(outDir, "frontend", "Dockerfile"))
+	if !strings.Contains(string(frontendDockerfile), "harbor.example.com/library/node:22-alpine") {
+		t.Error("frontend Dockerfile missing base registry prefix")
+	}
+}
+
+func TestRenderSkeleton_NextjsFastapi_NoBaseRegistry(t *testing.T) {
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "myapp")
+
+	params := Params{
+		Name:     "myapp",
+		Registry: "registry.example.com/ns",
+		Domain:   "example.com",
+	}
+
+	if err := RenderSkeleton("nextjs-fastapi", params, outDir); err != nil {
+		t.Fatalf("RenderSkeleton failed: %v", err)
+	}
+
+	backendDockerfile, _ := os.ReadFile(filepath.Join(outDir, "backend", "Dockerfile"))
+	if !strings.Contains(string(backendDockerfile), "FROM python:3.12-slim-bookworm") {
+		t.Error("backend Dockerfile should use plain python image without base registry")
+	}
+
+	frontendDockerfile, _ := os.ReadFile(filepath.Join(outDir, "frontend", "Dockerfile"))
+	if !strings.Contains(string(frontendDockerfile), "FROM node:22-alpine") {
+		t.Error("frontend Dockerfile should use plain node image without base registry")
 	}
 }
 

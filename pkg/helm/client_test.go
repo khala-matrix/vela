@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	c := New("/tmp/fake-kubeconfig", "default")
+	c := New("/tmp/fake-kubeconfig", "default", false)
 	if c == nil {
 		t.Fatal("expected non-nil client")
 	}
@@ -19,7 +19,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestReleaseExists_NoCluster(t *testing.T) {
-	c := New("/tmp/nonexistent-kubeconfig", "default")
+	c := New("/tmp/nonexistent-kubeconfig", "default", false)
 	if c.ReleaseExists("nonexistent") {
 		t.Error("expected ReleaseExists to return false without a cluster")
 	}

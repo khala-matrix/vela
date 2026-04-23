@@ -32,7 +32,7 @@ func runDelete(cmd *cobra.Command, args []string) error {
 
 	kubeconfigVal := cmd.Flag("kubeconfig").Value.String()
 	ns := cmd.Flag("namespace").Value.String()
-	hc := helm.New(kubeconfigVal, ns)
+	hc := helm.New(kubeconfigVal, ns, insecure)
 
 	if hc.ReleaseExists(st.Name) {
 		fmt.Fprintf(cmd.OutOrStdout(), "Uninstalling release %q...\n", st.Name)

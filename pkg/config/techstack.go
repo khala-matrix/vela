@@ -40,9 +40,17 @@ type Service struct {
 }
 
 type Ingress struct {
-	Enabled bool   `yaml:"enabled"`
-	Host    string `yaml:"host,omitempty"`
-	Path    string `yaml:"path,omitempty"`
+	Enabled     bool   `yaml:"enabled"`
+	Host        string `yaml:"host,omitempty"`
+	Path        string `yaml:"path,omitempty"`
+	StripPrefix *bool  `yaml:"stripPrefix,omitempty"`
+}
+
+func (i Ingress) StripPrefixEnabled() bool {
+	if i.StripPrefix == nil {
+		return true
+	}
+	return *i.StripPrefix
 }
 
 // App is the legacy single-service format. Kept for backward compatibility.

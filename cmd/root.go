@@ -12,6 +12,7 @@ var (
 	kubeconfig string
 	namespace  string
 	verbose    bool
+	insecure   bool
 )
 
 var rootCmd = &cobra.Command{
@@ -34,8 +35,9 @@ func init() {
 	}
 
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", defaultKubeconfig, "path to kubeconfig file")
-	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "default", "target namespace")
+	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "sandbox", "target namespace")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVar(&insecure, "insecure", false, "skip TLS certificate verification")
 
 	rootCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(deployCmd)
