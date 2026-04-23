@@ -3,11 +3,12 @@ package cmd
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 var (
-	_                      = loadEnvFile(".env")
+	_ = loadEnvFiles()
 	defaultRegistry        = envOrFallback("VELA_REGISTRY", "registry.example.com/myteam")
 	defaultDomain          = envOrFallback("VELA_DOMAIN", "apps.example.com")
 	defaultBaseRegistry    = envOrFallback("VELA_BASE_REGISTRY", "")
@@ -21,10 +22,18 @@ func envOrFallback(key, fallback string) string {
 	return fallback
 }
 
-func loadEnvFile(path string) bool {
+func loadEnvFiles() bool {
+	loadEnvFile(".env")
+	if home, err := os.UserHomeDir(); err == nil {
+		loadEnvFile(filepath.Join(home, ".vela", ".env"))
+	}
+	return true
+}
+
+func loadEnvFile(path string) {
 	f, err := os.Open(path)
 	if err != nil {
-		return false
+		return
 	}
 	defer f.Close()
 
@@ -44,5 +53,4 @@ func loadEnvFile(path string) bool {
 			os.Setenv(k, v)
 		}
 	}
-	return true
 }
