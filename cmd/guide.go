@@ -15,6 +15,7 @@ var (
 	guideNamespace string
 	guideRegistry  string
 	guideDomain    string
+	guideBuilder   string
 )
 
 var guideCmd = &cobra.Command{
@@ -36,6 +37,7 @@ func init() {
 	guideCmd.Flags().StringVar(&guideNamespace, "namespace", "sandbox", "namespace used in examples")
 	guideCmd.Flags().StringVar(&guideRegistry, "registry", defaultRegistry, "image registry used in examples")
 	guideCmd.Flags().StringVar(&guideDomain, "domain", defaultDomain, "ingress domain used in examples")
+	guideCmd.Flags().StringVar(&guideBuilder, "builder", "docker", "container build tool used in examples (docker, buildah)")
 }
 
 type guideData struct {
@@ -45,6 +47,8 @@ type guideData struct {
 	Domain          string
 	BaseRegistry    string
 	DBImageRegistry string
+	BuildTool       string
+	BuildCmd        string
 }
 
 func runGuide(cmd *cobra.Command, args []string) error {
@@ -70,6 +74,11 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no guide available for template %q", templateID)
 	}
 
+	buildCmd := "build"
+	if guideBuilder == "buildah" {
+		buildCmd = "bud"
+	}
+
 	data := guideData{
 		Name:            guideName,
 		Namespace:       guideNamespace,
@@ -77,6 +86,8 @@ func runGuide(cmd *cobra.Command, args []string) error {
 		Domain:          guideDomain,
 		BaseRegistry:    defaultBaseRegistry,
 		DBImageRegistry: defaultDBImageRegistry,
+		BuildTool:       guideBuilder,
+		BuildCmd:        buildCmd,
 	}
 
 	tmpl, err := template.New("guide").Parse(guideTmpl)
@@ -178,10 +189,10 @@ REGISTRY="${REGISTRY:-{{ .Registry }}}"
 TAG="${TAG:-latest}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 
-docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" ./backend
-docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" ./frontend
-docker push "${REGISTRY}/{{ .Name }}-backend:${TAG}"
-docker push "${REGISTRY}/{{ .Name }}-frontend:${TAG}"
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" ./backend
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" ./frontend
+{{ .BuildTool }} push "${REGISTRY}/{{ .Name }}-backend:${TAG}"
+{{ .BuildTool }} push "${REGISTRY}/{{ .Name }}-frontend:${TAG}"
 ` + "```" + `
 
 ## Path Coordination (Critical)
@@ -345,10 +356,10 @@ REGISTRY="${REGISTRY:-{{ .Registry }}}"
 TAG="${TAG:-latest}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 
-docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" ./backend
-docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" ./frontend
-docker push "${REGISTRY}/{{ .Name }}-backend:${TAG}"
-docker push "${REGISTRY}/{{ .Name }}-frontend:${TAG}"
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" ./backend
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" ./frontend
+{{ .BuildTool }} push "${REGISTRY}/{{ .Name }}-backend:${TAG}"
+{{ .BuildTool }} push "${REGISTRY}/{{ .Name }}-frontend:${TAG}"
 ` + "```" + `
 
 ## Path Coordination (Critical)
@@ -445,8 +456,8 @@ REGISTRY="${REGISTRY:-{{ .Registry }}}"
 TAG="${TAG:-latest}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 
-docker build --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}:${TAG}" .
-docker push "${REGISTRY}/{{ .Name }}:${TAG}"
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}:${TAG}" .
+{{ .BuildTool }} push "${REGISTRY}/{{ .Name }}:${TAG}"
 ` + "```" + `
 
 ## Quick Start
