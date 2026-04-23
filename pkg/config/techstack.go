@@ -74,10 +74,11 @@ type Resources struct {
 }
 
 type Dependency struct {
-	Version  string `yaml:"version"`
-	Storage  string `yaml:"storage,omitempty"`
-	Password string `yaml:"password,omitempty"`
-	Database string `yaml:"database,omitempty"`
+	Version       string `yaml:"version"`
+	Storage       string `yaml:"storage,omitempty"`
+	Password      string `yaml:"password,omitempty"`
+	Database      string `yaml:"database,omitempty"`
+	ImageRegistry string `yaml:"imageRegistry,omitempty"`
 }
 
 func (ts *TechStack) IsMultiService() bool {

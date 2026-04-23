@@ -26,10 +26,12 @@ type Params struct {
 	Registry     string
 	Domain       string
 	BaseRegistry string
+	DBPassword   string
 }
 
 var Templates = []Template{
 	{ID: "nextjs-fastapi", Name: "Next.js + FastAPI", Description: "Full-stack web app — Python backend, React frontend"},
+	{ID: "nextjs-fastapi-pg", Name: "Next.js + FastAPI + PostgreSQL", Description: "Full-stack web app with database — Python backend, React frontend, PostgreSQL"},
 	{ID: "static-site", Name: "Static Site", Description: "Single container — nginx static files"},
 }
 
