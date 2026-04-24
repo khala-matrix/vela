@@ -351,3 +351,49 @@ dependencies:
 		t.Errorf("expected default database myapp, got %s", mysql.Database)
 	}
 }
+
+func TestParseBytes_Valid(t *testing.T) {
+	yaml := []byte(`
+name: test-app
+ingress:
+  host: apps.example.com
+services:
+  - name: test-app-backend
+    image: registry.example.com/test-app-backend:latest
+    port: 8000
+    ingress:
+      enabled: true
+      path: /sandbox/test-app/api
+      stripPrefix: false
+  - name: test-app-frontend
+    image: registry.example.com/test-app-frontend:latest
+    port: 3000
+    ingress:
+      enabled: true
+      path: /sandbox/test-app
+      stripPrefix: false
+`)
+	ts, err := ParseBytes(yaml)
+	if err != nil {
+		t.Fatalf("ParseBytes failed: %v", err)
+	}
+	if ts.ProjectName() != "test-app" {
+		t.Errorf("expected project name test-app, got %s", ts.ProjectName())
+	}
+	if len(ts.Services) != 2 {
+		t.Fatalf("expected 2 services, got %d", len(ts.Services))
+	}
+}
+
+func TestParseBytes_Invalid(t *testing.T) {
+	yaml := []byte(`
+name: test-app
+services:
+  - name: broken
+    port: 8000
+`)
+	_, err := ParseBytes(yaml)
+	if err == nil {
+		t.Fatal("expected validation error for missing image")
+	}
+}

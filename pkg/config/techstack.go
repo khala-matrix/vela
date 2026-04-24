@@ -92,18 +92,12 @@ func (ts *TechStack) ProjectName() string {
 	return ts.App.Name
 }
 
-func Parse(path string) (*TechStack, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read tech-stack file: %w", err)
-	}
-
+func ParseBytes(data []byte) (*TechStack, error) {
 	var ts TechStack
 	if err := yaml.Unmarshal(data, &ts); err != nil {
 		return nil, fmt.Errorf("parse tech-stack yaml: %w", err)
 	}
 
-	// Legacy single-service format: convert app → services
 	if ts.App.Image != "" && len(ts.Services) == 0 {
 		if ts.Name == "" {
 			ts.Name = ts.App.Name
@@ -118,6 +112,14 @@ func Parse(path string) (*TechStack, error) {
 	applyDefaults(&ts)
 
 	return &ts, nil
+}
+
+func Parse(path string) (*TechStack, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read tech-stack file: %w", err)
+	}
+	return ParseBytes(data)
 }
 
 func appToService(a App) Service {
