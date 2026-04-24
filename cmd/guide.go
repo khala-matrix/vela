@@ -119,6 +119,22 @@ func runGuide(cmd *cobra.Command, args []string) error {
 	return tmpl.Execute(cmd.OutOrStdout(), data)
 }
 
+func RenderGuide(templateID string, data guideData) (string, error) {
+	guideTmpl, ok := guideTemplates[templateID]
+	if !ok {
+		return "", fmt.Errorf("no guide available for template %q", templateID)
+	}
+	tmpl, err := template.New("guide").Parse(guideTmpl)
+	if err != nil {
+		return "", fmt.Errorf("parse guide template: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("render guide: %w", err)
+	}
+	return buf.String(), nil
+}
+
 var guideTemplates = map[string]string{
 	"nextjs-fastapi-pg": `# Next.js + FastAPI + PostgreSQL — Setup Guide
 
