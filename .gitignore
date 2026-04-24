@@ -1,4 +1,5 @@
 vela
+vela_*
 sample/
 testpg/
 .env
