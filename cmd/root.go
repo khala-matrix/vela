@@ -28,7 +28,10 @@ func Execute() {
 }
 
 func init() {
-	defaultKubeconfig := os.Getenv("KUBECONFIG")
+	defaultKubeconfig := os.Getenv("VELA_KUBECONFIG")
+	if defaultKubeconfig == "" {
+		defaultKubeconfig = os.Getenv("KUBECONFIG")
+	}
 	if defaultKubeconfig == "" {
 		home, _ := os.UserHomeDir()
 		defaultKubeconfig = filepath.Join(home, ".kube", "config")

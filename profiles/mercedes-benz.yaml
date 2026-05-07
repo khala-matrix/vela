@@ -1,0 +1,20 @@
+# Vela profile: Mercedes-Benz corporate environment
+# Usage: vela configure --profile profiles/mercedes-benz.yaml
+
+# Container image registry for application images
+registry: harbor.cn.svc.corpintra.net/sandboxcoder
+
+# Ingress domain for deployed applications
+domain: devbox.ittz-tech-platform.cn.svc.corpintra.net
+
+# Base image registry for Dockerfile FROM (corporate mirror)
+base_registry: harbor.cn.svc.corpintra.net/baselibrary
+
+# Registry for database images (postgresql, redis, etc.)
+db_image_registry: harbor.cn.svc.corpintra.net/tools
+
+# Path to kubeconfig file for the target k3s cluster
+kubeconfig: ""
+
+# Base path prefix for ingress routing (project-specific, e.g. /sandbox/myapp)
+base_path: ""

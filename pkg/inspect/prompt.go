@@ -66,9 +66,9 @@ CRITICAL CONSTRAINTS — these are vela invariants, you MUST follow them:
 1. tech_stack_yaml must be valid YAML that conforms to the vela tech-stack.yaml schema
 2. Ingress paths must follow the pattern: /<namespace>/<appname> for frontend, /<namespace>/<appname>/api for backend
 3. stripPrefix must be false — Traefik passes the full path through
-4. Frontend (Next.js) needs basePath matching the ingress path
-5. All fetch() calls need the basePath prefix (basePath does NOT apply to fetch)
-6. Backend (FastAPI) needs APIRouter prefix matching the ingress path
+4. Frontend (Next.js) uses BASE_PATH env var for basePath (build-arg in Dockerfile)
+5. All fetch() calls use NEXT_PUBLIC_BASE_PATH env var as prefix
+6. Backend (FastAPI) reads BASE_PATH env var for APIRouter prefix
 7. Dockerfiles must use USER 1000 for the runtime stage
 8. build.sh must support REGISTRY, TAG, PLATFORM env vars
 9. Dependencies only: postgresql, mysql, redis, mongodb

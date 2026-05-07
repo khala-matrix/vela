@@ -18,7 +18,7 @@ echo "==> Building {{ .Name }}-backend (${PLATFORM})"
 {{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-backend:${TAG}" "${SCRIPT_DIR}/backend"
 
 echo "==> Building {{ .Name }}-frontend (${PLATFORM})"
-{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" "${SCRIPT_DIR}/frontend"
+{{ .BuildTool }} {{ .BuildCmd }} --platform "${PLATFORM}" --build-arg BASE_PATH="${VELA_BASE_PATH:-${BASE_PATH:-}}" -t "${REGISTRY}/{{ .Name }}-frontend:${TAG}" "${SCRIPT_DIR}/frontend"
 
 echo "==> Pushing images"
 {{ .BuildTool }} push "${REGISTRY}/{{ .Name }}-backend:${TAG}"

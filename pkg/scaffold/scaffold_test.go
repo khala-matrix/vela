@@ -65,8 +65,8 @@ func TestRenderSkeleton_NextjsFastapi(t *testing.T) {
 
 	nextConfig, _ := os.ReadFile(filepath.Join(outDir, "frontend", "next.config.ts"))
 	ncContent := string(nextConfig)
-	if !strings.Contains(ncContent, `basePath: "/sandbox/myapp"`) {
-		t.Error("next.config.ts missing basePath")
+	if !strings.Contains(ncContent, `process.env.BASE_PATH`) {
+		t.Error("next.config.ts missing BASE_PATH env var")
 	}
 	if !strings.Contains(ncContent, "myapp-myapp-backend:8000") {
 		t.Error("next.config.ts missing backend service URL")
@@ -186,8 +186,8 @@ func TestRenderSkeleton_NextjsFastapiPg(t *testing.T) {
 	if !strings.Contains(mainContent, "testpass123") {
 		t.Error("main.py missing DB password")
 	}
-	if !strings.Contains(mainContent, "/sandbox/testapp/api") {
-		t.Error("main.py missing correct API prefix")
+	if !strings.Contains(mainContent, `os.getenv("BASE_PATH"`) {
+		t.Error("main.py missing BASE_PATH env var for API prefix")
 	}
 
 	pageTsx, err := os.ReadFile(filepath.Join(outDir, "frontend", "src", "app", "page.tsx"))

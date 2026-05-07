@@ -14,7 +14,7 @@ interface HealthStatus {
   detail?: string;
 }
 
-const BASE = "/{{ .Namespace }}/{{ .Name }}";
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);

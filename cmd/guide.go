@@ -213,25 +213,28 @@ PLATFORM="${PLATFORM:-linux/amd64}"
 
 ## Path Coordination (Critical)
 
-Four places must agree on the path prefix **` + "`" + `/{{ .Namespace }}/{{ .Name }}` + "`" + `**:
+All paths are controlled by a single env var **` + "`" + `BASE_PATH` + "`" + `**:
+- Local dev: unset (empty) → frontend at ` + "`" + `/` + "`" + `, API at ` + "`" + `/api` + "`" + `
+- Cluster deploy: ` + "`" + `BASE_PATH=/{{ .Namespace }}/{{ .Name }}` + "`" + `
 
 ### 1. Backend — FastAPI route prefix
 
 ` + "```python" + `
-router = APIRouter(prefix="/{{ .Namespace }}/{{ .Name }}/api")
-# All routes (e.g. /health, /todos) are served under /{{ .Namespace }}/{{ .Name }}/api/...
+PREFIX = os.getenv("BASE_PATH", "")
+router = APIRouter(prefix=f"{PREFIX}/api")
 ` + "```" + `
 
 ### 2. Frontend — next.config.ts
 
 ` + "```ts" + `
+const basePath = process.env.BASE_PATH || "";
 const nextConfig: NextConfig = {
   output: "standalone",
-  basePath: "/{{ .Namespace }}/{{ .Name }}",       // static assets, routing
+  ...(basePath ? { basePath } : {}),
   rewrites: async () => [
     {
-      source: "/api/:path*",                       // relative to basePath
-      destination: "http://{{ .Name }}-{{ .Name }}-backend:8000/{{ .Namespace }}/{{ .Name }}/api/:path*",
+      source: "/api/:path*",
+      destination: ` + "`" + `http://{{ .Name }}-{{ .Name }}-backend:8000${basePath}/api/:path*` + "`" + `,
     },
   ],
 };
@@ -239,19 +242,19 @@ const nextConfig: NextConfig = {
 
 ### 3. Frontend — fetch() calls
 
-**basePath does NOT apply to fetch().** You must add the prefix manually:
-
 ` + "```tsx" + `
-// WRONG — will request /api/health (404)
-fetch("/api/health")
-
-// CORRECT — requests /{{ .Namespace }}/{{ .Name }}/api/health
-const BASE = "/{{ .Namespace }}/{{ .Name }}";
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 fetch(` + "`" + `${BASE}/api/health` + "`" + `)
 fetch(` + "`" + `${BASE}/api/todos` + "`" + `)
 ` + "```" + `
 
-### 4. Ingress — tech-stack.yaml (shown above)
+### 4. Build — pass BASE_PATH to frontend docker build
+
+` + "```bash" + `
+BASE_PATH="/{{ .Namespace }}/{{ .Name }}" ./build.sh
+` + "```" + `
+
+### 5. Ingress — tech-stack.yaml (shown above)
 
 ` + "```" + `
 Backend ingress path:  /{{ .Namespace }}/{{ .Name }}/api   → backend:8000
@@ -380,24 +383,28 @@ PLATFORM="${PLATFORM:-linux/amd64}"
 
 ## Path Coordination (Critical)
 
-Four places must agree on the path prefix **` + "`" + `/{{ .Namespace }}/{{ .Name }}` + "`" + `**:
+All paths are controlled by a single env var **` + "`" + `BASE_PATH` + "`" + `**:
+- Local dev: unset (empty) → frontend at ` + "`" + `/` + "`" + `, API at ` + "`" + `/api` + "`" + `
+- Cluster deploy: ` + "`" + `BASE_PATH=/{{ .Namespace }}/{{ .Name }}` + "`" + `
 
 ### 1. Backend — FastAPI route prefix
 
 ` + "```python" + `
-router = APIRouter(prefix="/{{ .Namespace }}/{{ .Name }}/api")
+PREFIX = os.getenv("BASE_PATH", "")
+router = APIRouter(prefix=f"{PREFIX}/api")
 ` + "```" + `
 
 ### 2. Frontend — next.config.ts
 
 ` + "```ts" + `
+const basePath = process.env.BASE_PATH || "";
 const nextConfig: NextConfig = {
   output: "standalone",
-  basePath: "/{{ .Namespace }}/{{ .Name }}",
+  ...(basePath ? { basePath } : {}),
   rewrites: async () => [
     {
       source: "/api/:path*",
-      destination: "http://{{ .Name }}-{{ .Name }}-backend:8000/{{ .Namespace }}/{{ .Name }}/api/:path*",
+      destination: ` + "`" + `http://{{ .Name }}-{{ .Name }}-backend:8000${basePath}/api/:path*` + "`" + `,
     },
   ],
 };
@@ -405,14 +412,18 @@ const nextConfig: NextConfig = {
 
 ### 3. Frontend — fetch() calls
 
-**basePath does NOT apply to fetch().** Add the prefix manually:
-
 ` + "```tsx" + `
-const BASE = "/{{ .Namespace }}/{{ .Name }}";
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 fetch(` + "`" + `${BASE}/api/health` + "`" + `)
 ` + "```" + `
 
-### 4. Ingress (in tech-stack.yaml)
+### 4. Build — pass BASE_PATH to frontend docker build
+
+` + "```bash" + `
+BASE_PATH="/{{ .Namespace }}/{{ .Name }}" ./build.sh
+` + "```" + `
+
+### 5. Ingress (in tech-stack.yaml)
 
 ` + "```" + `
 Backend:  /{{ .Namespace }}/{{ .Name }}/api → backend:8000

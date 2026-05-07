@@ -6,6 +6,9 @@ RUN npm install
 FROM {{ if .BaseRegistry }}{{ .BaseRegistry }}/{{ end }}node:22-alpine AS builder
 USER root
 WORKDIR /app
+ARG BASE_PATH=""
+ENV BASE_PATH=${BASE_PATH}
+ENV NEXT_PUBLIC_BASE_PATH=${BASE_PATH}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

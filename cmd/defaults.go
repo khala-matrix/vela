@@ -13,6 +13,8 @@ var (
 	defaultDomain          = envOrFallback("VELA_DOMAIN", "apps.example.com")
 	defaultBaseRegistry    = envOrFallback("VELA_BASE_REGISTRY", "")
 	defaultDBImageRegistry = envOrFallback("VELA_DB_IMAGE_REGISTRY", "")
+	defaultBasePath        = envOrFallback("VELA_BASE_PATH", "")
+	defaultVelaKubeconfig  = envOrFallback("VELA_KUBECONFIG", "")
 )
 
 func envOrFallback(key, fallback string) string {

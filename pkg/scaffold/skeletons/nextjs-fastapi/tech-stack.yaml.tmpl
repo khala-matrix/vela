@@ -6,6 +6,8 @@ services:
     image: {{ .Registry }}/{{ .Name }}-backend:latest
     port: 8000
     env:
+      - name: BASE_PATH
+        value: "/{{ .Namespace }}/{{ .Name }}"
       - name: CORS_ORIGINS
         value: "*"
       - name: PYTHONUNBUFFERED
